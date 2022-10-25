@@ -30,16 +30,17 @@ def get_feature_modes():
     # print('probabilities:',probabilities)
     return model
 
-def get_feature_input():
+def get_feature_input(path = '/data/ai/ai/pexels-pixabay-45201.jpg'):
     model = models.resnet18()
-    input_image = Image.open('/data/ai/ai/pexels-pixabay-45201.jpg')
+    input_image = Image.open(path)
     preprocess = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
+        transforms.Resize(256),#转换图片尺寸为256*256
+        transforms.CenterCrop(224),#从中心开始裁剪成224*224
+        transforms.ToTensor(), # 图片转tensor
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
     input_tensor = preprocess(input_image)
+    #在0维度上插入一个维度 [1,2,3] => [[1,2,3]]
     input_batch = input_tensor.unsqueeze(0)
     if torch.cuda.is_available():
         input_batch = input_batch.cuda()

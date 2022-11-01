@@ -174,7 +174,7 @@ def image_format(path: str,size,shape):
 
         
 @app.command()
-def postprocess(output_data,class_file,threshhold=0.5):
+def postprocess(output_data,class_file="imagenet_classes.txt",threshhold=0.5):
     # get class names
     with open(class_file) as f:
         classes = [line.strip() for line in f.readlines()]

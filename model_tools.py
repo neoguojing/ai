@@ -19,16 +19,16 @@ TRT_LOGGER = trt.Logger()
 
 pwd = os.getcwd()
 
-#model1 = torch.load("hybridnets.pth",map_location=torch.device('cpu'))
-
-# model = torch.hub.load('datvuthanh/hybridnets', 'hybridnets', pretrained=True)
-
-# features, regression, classification, anchors, segmentation = model(img)
-
-
 app = typer.Typer()
 
 input1 = torch.randn(1,3,640,384)
+
+def load_model(path: str,where: str = 'jit'):
+    model = object()
+    if where == 'jit':
+        use_gpu = torch.cuda.is_available()
+        if use_gpu:
+            model = torch.jit.load(path)
 
 @app.command()
 def run_pytorch_model(path: str):

@@ -3,10 +3,28 @@ import torchvision.models as models
 import torchvision.transforms as transforms
 from PIL import Image
 
-
-def get_feature_modes():
+def get_resnet18():
     model = models.resnet18(pretrained=True)
-    input_image = Image.open('/data/ai/ai/pexels-pixabay-45201.jpg')
+    return model
+
+def get_vgg16():
+    model = models.vgg16(pretrained=True)
+    return model
+
+def get_inception_v3():
+    model = models.inception_v3(pretrained=True)
+    return model
+
+def get_mobilenet_v2():
+    model = models.mobilenet_v2(pretrained=True)
+    return model
+
+def get_densenet121():
+    model = models.densenet121(pretrained=True)
+    return model
+    
+def extract_features(model, input_image_path):
+    input_image = Image.open(input_image_path)
     preprocess = transforms.Compose([
         transforms.Resize(256),
         transforms.CenterCrop(224),
@@ -14,37 +32,16 @@ def get_feature_modes():
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
     input_tensor = preprocess(input_image)
-    input_batch = input_tensor.unsqueeze(0) # create a mini-batch as expected by the model
+    input_batch = input_tensor.unsqueeze(0)
 
-    # move the input and model to GPU for speed if available
     if torch.cuda.is_available():
         input_batch = input_batch.cuda()
         model.eval().cuda()
 
-    # with torch.no_grad():
-    #     output = model(input_batch)
-    # Tensor of shape 1000, with confidence scores over Imagenet's 1000 classes
-    # print('out:',output[0])
-    # The output has unnormalized scores. To get probabilities, you can run a softmax on it.
-    # probabilities = torch.nn.functional.softmax(output[0], dim=0)
-    # print('probabilities:',probabilities)
-    return model
+    with torch.no_grad():
+        output = model(input_batch)
+    return output[0]
 
-def get_feature_input(path = '/data/ai/ai/pexels-pixabay-45201.jpg'):
-    model = models.resnet18()
-    input_image = Image.open(path)
-    preprocess = transforms.Compose([
-        transforms.Resize(256),#转换图片尺寸为256*256
-        transforms.CenterCrop(224),#从中心开始裁剪成224*224
-        transforms.ToTensor(), # 图片转tensor
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
-    input_tensor = preprocess(input_image)
-    #在0维度上插入一个维度 [1,2,3] => [[1,2,3]]
-    input_batch = input_tensor.unsqueeze(0)
-    if torch.cuda.is_available():
-        input_batch = input_batch.cuda()
-    print(input_tensor)
-    print(input_batch)
-    return input_batch
+
+
     

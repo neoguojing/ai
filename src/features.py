@@ -43,6 +43,7 @@ def extract_features(model, input_image_path):
     if torch.cuda.is_available():
         input_batch = input_batch.cuda()
         model.eval().cuda()
+        print("using gpu")
 
     with torch.no_grad():
         output = model(input_batch)

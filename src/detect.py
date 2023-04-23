@@ -25,9 +25,10 @@ def model_factory(model_name):
     elif model_name == 'SSDLite':
         # Load SSD Lite model in inference mode
         model = detection.ssd_lite_mobilenet_v3_large(pretrained=True, pretrained_backbone=True)
-    elif model_name == 'Yolov3':
-        # Load Yolov3 model in inference mode
-        model = torch.hub.load('ultralytics/yolov3', 'yolov3', pretrained=True)
+    elif model_name == 'Yolov5':
+        # Load Yolov5 model in inference mode
+        model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+        
     else:
         raise ValueError('Invalid model name')
     model.eval()

@@ -1,6 +1,8 @@
 # Use an official Python runtime as a parent image
 FROM guojingneo/pytorch-tensorflow-notebook:latest
 
+RUN pip install -qr https://raw.githubusercontent.com/ultralytics/yolov5/master/requirements.txt
+
 # Set the working directory to /app
 WORKDIR /workspace
 

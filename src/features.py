@@ -2,33 +2,24 @@ import torch
 import torchvision.models as models
 import torchvision.transforms as transforms
 from PIL import Image
+import torchvision.models.utils as utils
 
-def get_resnet18():
-    model = models.resnet18(pretrained=True)
+def get_model(model_name):
+    if model_name == 'resnet50':
+        model = models.resnet50(weight=utils.ResNet18_Weights.DEFAULT)
+    elif model_name == 'vgg16':
+        model = models.vgg16(pretrained=True)
+    elif model_name == 'inception_v3':
+        model = models.inception_v3(pretrained=True)
+    elif model_name == 'mobilenet_v2':
+        model = models.mobilenet_v2(pretrained=True)
+    elif model_name == 'densenet121':
+        model = models.densenet121(pretrained=True)
+    else:
+        raise ValueError('Invalid model name')
     model.eval()
     return model
 
-def get_vgg16():
-    model = models.vgg16(pretrained=True)
-    model.eval()
-    return model
-
-def get_inception_v3():
-    model = models.inception_v3(pretrained=True)
-    model.eval()
-    return model
-
-def get_mobilenet_v2():
-    model = models.mobilenet_v2(pretrained=True)
-    model.eval()
-    return model
-
-def get_densenet121():
-    model = models.densenet121(pretrained=True)
-    model.eval()
-    return model
-
-    
 def extract_features(model, input_image_path):
     input_image = Image.open(input_image_path)
     preprocess = transforms.Compose([
@@ -48,6 +39,8 @@ def extract_features(model, input_image_path):
     with torch.no_grad():
         output = model(input_batch)
     return output[0]
+
+
 
 
 

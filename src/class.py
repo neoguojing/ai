@@ -2,14 +2,17 @@
 import torch
 import torchvision.models as models
 
-# Define the ResNet50 model
-resnet50 = models.resnet50(pretrained=True)
+# Define the model factory function
+def get_model(model_name):
+    if model_name == 'resnet50':
+        return models.resnet50(pretrained=True)
+    elif model_name == 'mobilenetv2':
+        return models.mobilenet_v2(pretrained=True)
+    elif model_name == 'shufflenet':
+        return models.shufflenet_v2_x1_0(pretrained=True)
+    else:
+        raise ValueError('Invalid model name')
 
-# Define the MobileNetV2 model
-mobilenetv2 = models.mobilenet_v2(pretrained=True)
-
-# Define the ShuffleNet model
-shufflenet = models.shufflenet_v2_x1_0(pretrained=True)
 
 # Define the classification function for binary classification
 def binary_classification(image):

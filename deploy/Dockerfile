@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     bzip2 \
     libx11-6 \
     libgl1-mesa-dev \
-    libglib2.0-0\
+    libglib2.0-0 \
  && rm -rf /var/lib/apt/lists/*
 
 # Create a working directory

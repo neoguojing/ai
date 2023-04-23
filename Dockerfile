@@ -1,10 +1,8 @@
 # Use an official Python runtime as a parent image
 FROM guojingneo/pytorch-tensorflow-notebook:latest
 
-USER root
-RUN apt-get install libglvnd-dev mesa-utils
+
 RUN pip install -qr https://raw.githubusercontent.com/ultralytics/yolov5/master/requirements.txt
-USER user
 # Set the working directory to /app
 WORKDIR /workspace
 

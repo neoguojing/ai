@@ -4,7 +4,7 @@ import json
 import pickle
 
 DATASET_PREFIX = os.environ.get('DATASET_PREFIX', '')
-IMAGENET_LABELS_FILE = DATASET_PREFIX + "imagenet_class_index.json"
+IMAGENET_LABELS_FILE = DATASET_PREFIX + "imagenet_classes.txt"
 CIFAR100_LABELS_FILE = DATASET_PREFIX + "cifar100_labels.txt"
 CIFAR10_LABELS_FILE = DATASET_PREFIX + "cifar10_labels.meta"
 PASCAL_VOC_LABELS_FILE = DATASET_PREFIX + "pascal_voc_labels.txt"
@@ -16,17 +16,15 @@ def get_imagenet_labels():
     # Download the labels file from the internet
     
     if not os.path.exists(IMAGENET_LABELS_FILE):
-        url = "https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json"
+        url = "https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt"
         urllib.request.urlretrieve(url, IMAGENET_LABELS_FILE)
     
     # Load the labels file
   
-    with open(IMAGENET_LABELS_FILE) as f:
-        class_idx = json.load(f)
+    with open(IMAGENET_LABELS_FILE, "r") as f:
+        class_names = [line.strip() for line in f.readlines()]
     
-    # Extract the labels
-    labels = [class_idx[str(k)][1] for k in range(len(class_idx))]
-    return labels
+    return class_names
 
 # Call the function to get the labels from ImageNet
 imagenet_labels = get_imagenet_labels()

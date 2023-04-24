@@ -5,6 +5,8 @@ IMAGE_TAG = latest
 BASE_IMAGE_NAME = guojingneo/pytorch-tensorflow-notebook
 BASE_IMAGE_TAG = latest
 
+pwd := $(shell pwd)
+
 # Define the build command
 build:
 	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
@@ -25,4 +27,6 @@ run:
 base:
 	docker build -t $(BASE_IMAGE_NAME):$(BASE_IMAGE_TAG) ./deploy/
 	docker push $(BASE_IMAGE_NAME):$(BASE_IMAGE_TAG)
+
+
 

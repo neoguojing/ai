@@ -2,7 +2,7 @@
 # Start with an official NVIDIA CUDA image
 FROM nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04
 
-
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 # Install some basic utilities
 RUN apt-get update && apt-get install -y \
@@ -12,7 +12,6 @@ RUN apt-get update && apt-get install -y \
     git \
     bzip2 \
     libx11-6 \
-    tzdata \
     libgl1-mesa-dev \
     libglib2.0-0 \ 
  && rm -rf /var/lib/apt/lists/*

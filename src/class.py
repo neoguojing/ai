@@ -1,6 +1,7 @@
-# Import necessary libraries
+
 import torch
 import torchvision.models as models
+from torchvision.models import shufflenet_v2_x1_0
 
 # Define the model factory function
 def get_model(model_name):
@@ -8,17 +9,28 @@ def get_model(model_name):
         return models.resnet50(pretrained=True)
     elif model_name == 'mobilenetv2':
         return models.mobilenet_v2(pretrained=True)
-    elif model_name == 'shufflenet':
+    elif model_name == 'shufflenetv2':
         return models.shufflenet_v2_x1_0(pretrained=True)
     else:
         raise ValueError('Invalid model name')
-
 
 # Define the classification function for binary classification
 def binary_classification(image):
     # Preprocess the image
     # ...
     # Pass the image through the ResNet50 model
+    resnet50 = get_model('resnet50')
+    output = resnet50(image)
+    # Post-process the output
+    # ...
+    return output
+
+# Define the classification function for binary classification
+def binary_classification(image):
+    # Preprocess the image
+    # ...
+    # Pass the image through the ResNet50 model
+    resnet50 = get_model('resnet50')
     output = resnet50(image)
     # Post-process the output
     # ...
@@ -29,11 +41,11 @@ def multi_classification(image):
     # Preprocess the image
     # ...
     # Pass the image through the MobileNetV2 model
+    mobilenetv2 = get_model('mobilenetv2')
     output = mobilenetv2(image)
     # Post-process the output
     # ...
     return output
-
 
     # Define the post-processor function to convert class result to human read format
 def post_processor(output):
@@ -45,8 +57,7 @@ def post_processor(output):
 
 # Define the final classification function that uses the post-processor
 def final_classification(image, num_classes):
-    # Preprocess the image
-    # ...
+
     # Pass the image through the appropriate model based on the number of classes
     if num_classes == 2:
         output = binary_classification(image)
@@ -81,3 +92,4 @@ def get_imagenet_labels():
 
 # Call the function to get the labels from ImageNet
 imagenet_labels = get_imagenet_labels()
+

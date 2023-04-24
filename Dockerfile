@@ -6,6 +6,8 @@ RUN pip install -qr https://raw.githubusercontent.com/ultralytics/yolov5/master/
 # Set the working directory to /app
 WORKDIR /workspace
 
+ENV DATASET_PREFIX=/workspace/dataset/
+
 # Copy the current directory contents into the container at /app
 # COPY . /workspace
 

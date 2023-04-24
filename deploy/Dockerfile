@@ -2,6 +2,8 @@
 # Start with an official NVIDIA CUDA image
 FROM nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04
 
+
+
 # Install some basic utilities
 RUN apt-get update && apt-get install -y \
     curl \
@@ -10,9 +12,12 @@ RUN apt-get update && apt-get install -y \
     git \
     bzip2 \
     libx11-6 \
+    tzdata \
     libgl1-mesa-dev \
     libglib2.0-0 \ 
  && rm -rf /var/lib/apt/lists/*
+
+ RUN dpkg-reconfigure --frontend noninteractive tzdata
 
 # Create a working directory
 RUN mkdir /workspace

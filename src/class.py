@@ -28,7 +28,7 @@ def classification(image_path, model_name):
     # Get the model
     model = get_model(model_name)
     # Use the model for inference
-# Load the image
+    # Load the image
     image = Image.open(image_path)
     # Preprocess the image
     preprocess = transforms.Compose([
@@ -40,9 +40,14 @@ def classification(image_path, model_name):
     ])
     tensor = preprocess(image).unsqueeze(0)
 
-    # Use the model for inference
-    output = model(tensor)
+    if torch.cuda.is_available():
+        tensor = tensor.to('cuda')
 
+    output = None
+    with torch.no_grad():
+        output = model(tensor)
+
+    print(output[0])
     # Post-process the output
     label = post_processor(output)
     return label
@@ -51,6 +56,8 @@ def classification(image_path, model_name):
 
 # Define the post-processor function to convert class result to human read format
 def post_processor(output):
+    probabilities = torch.nn.functional.softmax(output[0], dim=0)
+    print(probabilities)
     # Get the index of the predicted class
     _, index = torch.max(output, 1)
     # Convert the index to a human-readable label

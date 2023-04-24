@@ -27,9 +27,8 @@ def postprocess(output):
     labels = output[0]['labels'].detach().numpy()
     masks = output[0]['masks'].detach().numpy()
 
-    result = {boxes,labels,masks}
-
-    return result
+    print(boxes,labels,masks)
+    return boxes,labels,masks
 
 # Define the function for instance segmentation using Mask R-CNN and YOLACT models with postprocessing
 # Define the factory function for instance segmentation using Mask R-CNN and YOLACT models with postprocessing
@@ -48,6 +47,6 @@ def instance_segmentation(image_path, model_name):
     with torch.no_grad():
         output = model([image])
         
-    postprocessed_output = postprocess(output)
-    return postprocessed_output
+    boxes,labels,masks = postprocess(output)
+    return boxes,labels,masks
 

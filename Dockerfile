@@ -4,9 +4,8 @@ FROM guojingneo/pytorch-notebook:latest
 
 RUN pip install -qr https://raw.githubusercontent.com/ultralytics/yolov5/master/requirements.txt
 RUN git clone https://github.com/dbolya/yolact.git 
-RUN cd yolact
-RUN conda env create -f environment.yml
-RUN wget https://drive.google.com/uc?id=1JysaNcgNBahBqNSApJVopVntYSH7q-fR -O yolact_resnet50.pth 
+RUN cd yolact && conda env create -f environment.yml \
+    && wget https://drive.google.com/file/d/1yp7ZbbDwvMiFJEq4ptVKTYTI2VeRDXl0/view?usp=sharing -fR -O yolact_resnet50.pth  
 
 # Set the working directory to /app
 WORKDIR /workspace

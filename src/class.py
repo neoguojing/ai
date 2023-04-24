@@ -58,10 +58,16 @@ def classification(image_path, model_name):
 def post_processor(output):
     probabilities = torch.nn.functional.softmax(output[0], dim=0)
     print(probabilities)
-    # Get the index of the predicted class
-    _, index = torch.max(output, 1)
-    # Convert the index to a human-readable label
-    label = imagenet_labels[index[0]]
-    return label
+
+    top5_prob, top5_catid = torch.topk(probabilities, 5)
+    output = []
+    for i in range(top5_prob.size(0)):
+        print(imagenet_labels[top5_catid[i]], top5_prob[i].item())
+        output.append({imagenet_labels[top5_catid[i]]:top5_prob[i].item()})
+    # # Get the index of the predicted class
+    # _, index = torch.max(output, 1)
+    # # Convert the index to a human-readable label
+    # label = imagenet_labels[index[0]]
+    return output
 
 

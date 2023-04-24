@@ -37,7 +37,7 @@ RUN conda update -y conda \
 
 # Install PyTorch, TensorFlow, and Jupyter Notebook
 RUN conda install -y -c pytorch pytorch torchvision torchaudio -c=pytorch-lts \
- && conda install -y -c anaconda tensorflow-gpu \
+#  && conda install -y -c anaconda tensorflow-gpu \
  && conda install -y -c anaconda jupyter
 
 # Set up the entry point for Jupyter Notebook

@@ -1,7 +1,6 @@
 import torch
 from dataset import imagenet_labels
 import torchvision.models as models
-from torchvision.models import shufflenet_v2_x1_0
 from torchvision.transforms import transforms
 from PIL import Image
 
@@ -12,7 +11,7 @@ def get_model(model_name):
     elif model_name == 'mobilenetv2':
         model = models.mobilenet_v2(pretrained=True)
     elif model_name == 'shufflenetv2':
-        model = shufflenet_v2_x1_0(pretrained=True)
+        model = models.shufflenet_v2_x1_0(pretrained=True)
     else:
         raise ValueError('Invalid model name')
     # Use GPU if available

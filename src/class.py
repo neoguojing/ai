@@ -1,53 +1,35 @@
 
 import torch
+from dataset import imagenet_labels
 import torchvision.models as models
 from torchvision.models import shufflenet_v2_x1_0
 
 # Define the model factory function
 def get_model(model_name):
     if model_name == 'resnet50':
-        return models.resnet50(pretrained=True)
+        model = models.resnet50(pretrained=True)
     elif model_name == 'mobilenetv2':
-        return models.mobilenet_v2(pretrained=True)
+        model = models.mobilenet_v2(pretrained=True)
     elif model_name == 'shufflenetv2':
-        return models.shufflenet_v2_x1_0(pretrained=True)
+        model = models.shufflenet_v2_x1_0(pretrained=True)
     else:
         raise ValueError('Invalid model name')
+    # Use GPU if available
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    model.eval() # Set model to inference mode
+    return model
 
-# Define the classification function for binary classification
-def binary_classification(image):
-    # Preprocess the image
-    # ...
-    # Pass the image through the ResNet50 model
-    resnet50 = get_model('resnet50')
-    output = resnet50(image)
-    # Post-process the output
-    # ...
-    return output
-
-# Define the classification function for binary classification
-def binary_classification(image):
-    # Preprocess the image
-    # ...
-    # Pass the image through the ResNet50 model
-    resnet50 = get_model('resnet50')
-    output = resnet50(image)
-    # Post-process the output
-    # ...
-    return output
 
 # Define the classification function for multi-class classification
-def multi_classification(image):
-    # Preprocess the image
-    # ...
-    # Pass the image through the MobileNetV2 model
-    mobilenetv2 = get_model('mobilenetv2')
-    output = mobilenetv2(image)
+def classification(image,model):
+
+    output = model(image)
     # Post-process the output
-    # ...
+    post_processor(output)
     return output
 
-    # Define the post-processor function to convert class result to human read format
+# Define the post-processor function to convert class result to human read format
 def post_processor(output):
     # Get the index of the predicted class
     _, index = torch.max(output, 1)
@@ -55,41 +37,9 @@ def post_processor(output):
     label = imagenet_labels[index[0]]
     return label
 
-# Define the final classification function that uses the post-processor
-def final_classification(image, num_classes):
-
-    # Pass the image through the appropriate model based on the number of classes
-    if num_classes == 2:
-        output = binary_classification(image)
-    else:
-        output = multi_classification(image)
-    # Pass the output through the post-processor
-    output = post_processor(output)
-    return output
 
 
-# Define the function for category encoding
-def category_encode(labels):
-    # Use PyTorch's built-in one-hot encoding function
-    encoded_labels = torch.nn.functional.one_hot(labels)
-    return encoded_labels
 
-# Define the function to get the labels from ImageNet
-def get_imagenet_labels():
-    # Download the labels file from the internet
-    import urllib.request
-    url = "https://raw.githubusercontent.com/pytorch/examples/master/imagenet/imagenet_class_index.json"
-    urllib.request.urlretrieve(url, "imagenet_class_index.json")
-    
-    # Load the labels file
-    import json
-    with open("imagenet_class_index.json") as f:
-        class_idx = json.load(f)
-    
-    # Extract the labels
-    labels = [class_idx[str(k)][1] for k in range(len(class_idx))]
-    return labels
 
-# Call the function to get the labels from ImageNet
-imagenet_labels = get_imagenet_labels()
+
 

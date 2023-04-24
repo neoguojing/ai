@@ -4,6 +4,7 @@ import torch
 import torchvision
 from PIL import Image
 from torchvision import transforms
+import numpy as np
 
 def get_model(model_name):
     if model_name == 'maskrcnn':
@@ -25,10 +26,18 @@ def postprocess(output):
     # get the predicted boxes, labels, and masks for the objects in the image
     boxes = output[0]['boxes'].detach().numpy()
     labels = output[0]['labels'].detach().numpy()
+    classs = np.empty(0)
+    for lable in labels:
+        cls = coco_labels[lable]
+        classs = np.append(classs,cls)
+
     masks = output[0]['masks'].detach().numpy()
 
-    print(boxes,labels,masks)
-    return boxes,labels,masks
+    print("boxes:",boxes)
+    print("labels:",labels)
+    print("classs:",classs)
+    print("masks:",masks)
+    return boxes,classs,masks
 
 # Define the function for instance segmentation using Mask R-CNN and YOLACT models with postprocessing
 # Define the factory function for instance segmentation using Mask R-CNN and YOLACT models with postprocessing

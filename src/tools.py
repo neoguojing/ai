@@ -30,7 +30,8 @@ def scale_bbox(bbox, scale_factor):
     new_y1 = int(y1 - (new_height - height) / 2)
     new_x2 = new_x1 + new_width
     new_y2 = new_y1 + new_height
-    return (new_x1, new_y1, new_x2, new_y2)
+    return np.array([new_x1, new_y1, new_x2, new_y2])
+
 
 
 def cal_scale_factor(original_size, target_size):

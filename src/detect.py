@@ -1,5 +1,4 @@
 import torch
-import torchvision
 from torchvision.models import detection
 import numpy as np
 from PIL import Image
@@ -27,22 +26,8 @@ def model_factory(model_name):
         # Dataset COCO
         model = detection.fasterrcnn_resnet50_fpn(pretrained=True, pretrained_backbone=True)
     elif model_name == 'SSDLite':
-        # load the pre-trained MobileNetV3 Large backbone
-        backbone = torchvision.models.mobilenet_v3_large(pretrained=True).features
-
-        # create the SSD model with MobileNetV3 Large backbone
-        model = torchvision.models.detection.ssd.SSD(
-            backbone=backbone,
-            num_classes=91,
-            box_detections_per_img=10,
-            score_thresh=0.5
-        )
-
-        # load the pre-trained weights for the SSD model
-        model.load_state_dict(torch.hub.load_state_dict_from_url(
-            'https://download.pytorch.org/models/ssd_lite_mobilenet_v3_large_320x320.pth',
-            progress=True
-        ))
+         # Dataset COCO
+        model = detection.ssd300_vgg16(pretrained=True)
     elif model_name == 'Yolov5':
         # Load Yolov5 model in inference mode
         model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
@@ -73,9 +58,16 @@ def detect_with_model(image_path, model_name):
     with torch.no_grad():
         detections = model(image)
 
-    #detections = model.postprocess(detections)
+    boxes,scores,labels = post_process(detections)
 
-    return detections
+    return boxes,scores,labels
+
+def post_process(outputs):
+    preds = outputs[0]
+    boxes = preds['boxes'].detach()  # Bounding boxes
+    scores = preds['scores'].detach()  # Confidence scores
+    labels = preds['labels'].detach()  
+    return boxes,scores,labels
 
 
 def post_process_detections(outputs, confidence_threshold=0.5, nms_iou_threshold=0.5):

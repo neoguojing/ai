@@ -26,4 +26,4 @@ EXPOSE 80
 
 # Run app.py when the container launches
 # CMD ["python", "app.py"]
-CMD ["chown", "--recursive user:user /workspace"]
+CMD ["chown", "-R" ,"user:user", "/workspace"]

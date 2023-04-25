@@ -21,8 +21,10 @@ def scale_bbox(bboxs, factor):
     """
     Scales the given list of bounding boxes by the given scale factor.
     """
+    print(bboxs)
     scaled_bboxs = []
     for bbox in bboxs:
+        print(bbox)
         x1, y1, x2, y2 = bbox
         width = x2 - x1
         height = y2 - y1

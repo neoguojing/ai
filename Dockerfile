@@ -2,6 +2,8 @@
 # FROM guojingneo/pytorch-tensorflow-notebook:latest
 FROM guojingneo/pytorch-notebook:latest
 
+RUN pip install cython
+RUN pip install pycocotools
 RUN pip install -qr https://raw.githubusercontent.com/ultralytics/yolov5/master/requirements.txt
 RUN git clone https://github.com/dbolya/yolact.git 
 RUN cd yolact && conda env create -f environment.yml \

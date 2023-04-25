@@ -1,34 +1,51 @@
-# Import necessary libraries
 import torch
+import torchvision
 from torchvision.models import detection
 import numpy as np
+from PIL import Image
 
 def load_image(image_path):
     """
     Loads an image from the given file path using the PIL library.
     """
     image = Image.open(image_path)
-    return image
+    array = np.array(image)
+    return array
 
 # Define model factory
 def model_factory(model_name):
     if model_name == 'RetinaNet':
         # [{'boxes': tensor([], size=(0, 4)), 'scores': tensor([]), 'labels': tensor([], dtype=torch.int64)}]
         # Load RetinaNet model in inference mode
+        # Dataset COCO
         model = detection.retinanet_resnet50_fpn(pretrained=True, pretrained_backbone=True)
     elif model_name == 'FasterRCNN':
         # [{'boxes': tensor([[  0.,   0., 640., 669.],
         # [  0.,   0., 640., 669.]], device='cuda:0'), 'labels': tensor([67,  1], device='cuda:0'), 
         # 'scores': tensor([1., 1.], device='cuda:0')}]
         # Load FasterRCNN model in inference mode
+        # Dataset COCO
         model = detection.fasterrcnn_resnet50_fpn(pretrained=True, pretrained_backbone=True)
     elif model_name == 'SSDLite':
-        # Load SSD Lite model in inference mode
-        model = detection.ssd_lite_mobilenet_v3_large(pretrained=True, pretrained_backbone=True)
+        # load the pre-trained MobileNetV3 Large backbone
+        backbone = torchvision.models.mobilenet_v3_large(pretrained=True).features
+
+        # create the SSD model with MobileNetV3 Large backbone
+        model = torchvision.models.detection.ssd.SSD(
+            backbone=backbone,
+            num_classes=91,
+            box_detections_per_img=10,
+            score_thresh=0.5
+        )
+
+        # load the pre-trained weights for the SSD model
+        model.load_state_dict(torch.hub.load_state_dict_from_url(
+            'https://download.pytorch.org/models/ssd_lite_mobilenet_v3_large_320x320.pth',
+            progress=True
+        ))
     elif model_name == 'Yolov5':
         # Load Yolov5 model in inference mode
         model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
-        
     else:
         raise ValueError('Invalid model name')
     model.eval()
@@ -36,11 +53,16 @@ def model_factory(model_name):
 
 
 # Define function to detect with a given model
-def detect_with_model(image, model_name):
+def detect_with_model(image_path, model_name):
+    image = load_image(image_path)
+    
     # Get model
     model = model_factory(model_name)
     # Preprocess image
     image = torch.from_numpy(image).permute(2, 0, 1).float().unsqueeze(0)
+    
+    if model_name == "Yolov5":
+        image = Image.open(image_path)
 
     if torch.cuda.is_available():
         image = image.cuda()
@@ -50,9 +72,10 @@ def detect_with_model(image, model_name):
     # Perform detection
     with torch.no_grad():
         detections = model(image)
-    # detections = model.postprocess(detections)
-    return detections
 
+    #detections = model.postprocess(detections)
+
+    return detections
 
 
 def post_process_detections(outputs, confidence_threshold=0.5, nms_iou_threshold=0.5):

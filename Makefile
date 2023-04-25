@@ -21,7 +21,7 @@ push:
 
 # Define the run command
 run:
-	docker run --gpus all -p 8888:8888 --user 1000:1000 -v $(pwd):/workspace:rw --rm -it --name ai-world $(IMAGE_NAME):$(IMAGE_TAG)
+	docker run --gpus all -p 8888:8888 -v $(pwd):/workspace:rw --rm -it --name ai-world $(IMAGE_NAME):$(IMAGE_TAG)
 
 # Define the base command
 base:

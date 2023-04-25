@@ -21,10 +21,10 @@ def scale_bbox(bboxs, factor):
     """
     Scales the given list of bounding boxes by the given scale factor.
     """
-    print(bboxs)
+    print("factor",factor)
     scaled_bboxs = []
     for bbox in bboxs:
-        print(bbox)
+        print("origin",bbox)
         x1, y1, x2, y2 = bbox
         width = x2 - x1
         height = y2 - y1
@@ -34,6 +34,7 @@ def scale_bbox(bboxs, factor):
         new_y1 = int(y1 - (new_height - height) / 2)
         new_x2 = new_x1 + new_width
         new_y2 = new_y1 + new_height
+        print("new",[new_x1, new_y1, new_x2, new_y2])
         scaled_bboxs.append([new_x1, new_y1, new_x2, new_y2])
     return np.array(scaled_bboxs)
 

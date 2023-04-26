@@ -1,51 +1,24 @@
 import torch
+import sys
+sys.path.insert(0, '')
+from  model_factory import ModelFactory
+from tools import image_preprocessor
 from dataset import imagenet_labels
-import torchvision.models as models
-from torchvision.transforms import transforms
-from PIL import Image
-
-# Define the model factory function
-def get_model(model_name):
-    if model_name == 'resnet50':
-        model = models.resnet50(pretrained=True)
-    elif model_name == 'mobilenetv2':
-        model = models.mobilenet_v2(pretrained=True)
-    elif model_name == 'shufflenetv2':
-        model = models.shufflenet_v2_x1_0(pretrained=True)
-    else:
-        raise ValueError('Invalid model name')
-    # Use GPU if available
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-    model.eval() # Set model to inference mode
-    return model
-
 
 # Define the classification function for multi-class classification
 def classification(image_path, model_name):
-    # Load the image
-
     # Get the model
-    model = get_model(model_name)
-    # Use the model for inference
-    # Load the image
-    image = Image.open(image_path)
+    model = ModelFactory.create_classication_model(model_name)
+
     # Preprocess the image
-    preprocess = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
-    ])
-    tensor = preprocess(image).unsqueeze(0)
+    input_batch = image_preprocessor(image_path)
 
     if torch.cuda.is_available():
-        tensor = tensor.to('cuda')
+        input_batch = input_batch.cuda()
+        print("using gpu")
 
-    output = None
     with torch.no_grad():
-        output = model(tensor)
+        output = model(input_batch)
 
     print(output[0])
     # Post-process the output

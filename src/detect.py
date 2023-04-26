@@ -1,73 +1,42 @@
 import torch
-from torchvision.models import detection
-import numpy as np
 from PIL import Image
-
-def load_image(image_path):
-    """
-    Loads an image from the given file path using the PIL library.
-    """
-    image = Image.open(image_path)
-    array = np.array(image)
-    return array
-
-# Define model factory
-def model_factory(model_name):
-    if model_name == 'RetinaNet':
-        # [{'boxes': tensor([], size=(0, 4)), 'scores': tensor([]), 'labels': tensor([], dtype=torch.int64)}]
-        # Load RetinaNet model in inference mode
-        # Dataset COCO
-        model = detection.retinanet_resnet50_fpn(pretrained=True, pretrained_backbone=True)
-    elif model_name == 'FasterRCNN':
-        # [{'boxes': tensor([[  0.,   0., 640., 669.],
-        # [  0.,   0., 640., 669.]], device='cuda:0'), 'labels': tensor([67,  1], device='cuda:0'), 
-        # 'scores': tensor([1., 1.], device='cuda:0')}]
-        # Load FasterRCNN model in inference mode
-        # Dataset COCO
-        model = detection.fasterrcnn_resnet50_fpn(pretrained=True, pretrained_backbone=True)
-    elif model_name == 'SSDLite':
-         # Dataset COCO
-        model = detection.ssd300_vgg16(pretrained=True)
-    elif model_name == 'Yolov5':
-        # Load Yolov5 model in inference mode
-        model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
-    else:
-        raise ValueError('Invalid model name')
-    model.eval()
-    return model
-
+import sys
+sys.path.insert(0, '')
+from model_factory import ModelFactory
+from tools import image_preprocessor,scale_bbox,label_to_class
+from dataset import coco_labels
 
 # Define function to detect with a given model
 def detect_with_model(image_path, model_name):
-    image = load_image(image_path)
     
     # Get model
-    model = model_factory(model_name)
+    model = ModelFactory.create_detect_model(model_name)
     # Preprocess image
-    image = torch.from_numpy(image).permute(2, 0, 1).float().unsqueeze(0)
+    input_batch,scale_factor = image_preprocessor(image_path)
     
     if model_name == "Yolov5":
-        image = Image.open(image_path)
+        input_batch = Image.open(image_path)
 
     if torch.cuda.is_available():
-        image = image.cuda()
-        model.eval().cuda()
+        input_batch = input_batch.cuda()
         print("using gpu")
 
     # Perform detection
     with torch.no_grad():
-        detections = model(image)
+        detections = model(input_batch)
 
-    boxes,scores,labels = post_process(detections)
+    boxes,scores,labels = post_process(detections,scale_factor)
 
     return boxes,scores,labels
 
-def post_process(outputs):
+def post_process(outputs,scale_factor):
     preds = outputs[0]
-    boxes = preds['boxes'].detach()  # Bounding boxes
-    scores = preds['scores'].detach()  # Confidence scores
-    labels = preds['labels'].detach()  
-    return boxes,scores,labels
+    bboxs = preds['boxes'].detach().cpu().numpy()  # Bounding boxes
+    new_boxes = scale_bbox(bboxs=bboxs,factor=scale_factor)
+    scores = preds['scores'].detach().cpu().numpy()  # Confidence scores
+    labels = preds['labels'].detach().cpu().numpy()  
+    classs = label_to_class(labels,coco_labels)
+    return new_boxes,scores,classs
 
 
 def post_process_detections(outputs, confidence_threshold=0.5, nms_iou_threshold=0.5):

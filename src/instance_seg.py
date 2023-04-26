@@ -1,61 +1,41 @@
 # Define the function for Mask R-CNN model
 # Import the necessary libraries
 import torch
-import torchvision
-from PIL import Image
-from torchvision import transforms
 import numpy as np
+import sys
+sys.path.insert(0, '')
+from  model_factory import ModelFactory
+from tools import image_preprocessor,label_to_class,scale_bbox
+from dataset import coco_labels
 
-def get_model(model_name):
-    if model_name == 'maskrcnn':
-        model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)
-    elif model_name == 'yolact':
-        model = torch.hub.load('dbolya/yolact', 'yolact_resnet50', pretrained=True)
-    else:
-        raise ValueError('Invalid model name')
-    # Use GPU if available
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-    model.eval() # Set model to inference mode
-    return model
+# Define the factory function for instance segmentation using Mask R-CNN and YOLACT models with postprocessing
+def instance_segmentation(image_path,model_name):
+    model = ModelFactory.create_instance_model(model_name)
 
+    input_batch,scale_factor = image_preprocessor(image_path)
+    if torch.cuda.is_available():
+        input_batch = input_batch.cuda()
+        print("using gpu")
+    
+    with torch.no_grad():
+        output = model(input_batch)
+        
+    boxes,labels,masks = postprocess(output,scale_factor)
+    return boxes,labels,masks
 
-# Define the function for postprocessing
-def postprocess(output):
+def postprocess(output,scale_factor):
     # Perform postprocessing on the model output
     # get the predicted boxes, labels, and masks for the objects in the image
     boxes = output[0]['boxes'].detach().numpy()
+    new_boxes = scale_bbox(bboxs=boxes,factor=scale_factor)
     labels = output[0]['labels'].detach().numpy()
-    classs = np.empty(0)
-    for lable in labels:
-        cls = coco_labels[lable]
-        classs = np.append(classs,cls)
+    classs = label_to_class(labels,coco_labels)
 
     masks = output[0]['masks'].detach().numpy()
 
     print("boxes:",boxes)
+    print("new_boxes:",new_boxes)
     print("labels:",labels)
     print("classs:",classs)
     print("masks:",masks)
-    return boxes,classs,masks
-
-# Define the function for instance segmentation using Mask R-CNN and YOLACT models with postprocessing
-# Define the factory function for instance segmentation using Mask R-CNN and YOLACT models with postprocessing
-def instance_segmentation(image_path, model_name):
-    image = Image.open(image_path)
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-    ])
-    image = transform(image)
-    if torch.cuda.is_available():
-        image = image.to('cuda')
-    
-    model = get_model(model_name)
-    output = None
-    with torch.no_grad():
-        output = model([image])
-        
-    boxes,labels,masks = postprocess(output)
-    return boxes,labels,masks
-
+    return new_boxes,classs,masks

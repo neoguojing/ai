@@ -114,10 +114,9 @@ def draw_detect(image_path,boxes, scores,labels, threshold=0.5, label_font=None)
             draw.rectangle([box[0], box[1] - text_size[1], box[0] + text_size[0], box[1]], fill='red')
             draw.text((box[0], box[1] - text_size[1]), text, fill='white', font=font)
     image.show()
-    return image
 
 def draw_instance(image_path,boxes,labels,masks):
-    image = Image.open(image_path)
+    image = cv2.imread(image_path)
 
     # Convert the masks to NumPy arrays and resize them to the size of the input image
     masks = [cv2.resize(mask, image.shape[1::-1]) for mask in masks]

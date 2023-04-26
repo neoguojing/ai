@@ -11,7 +11,7 @@ def classification(image_path, model_name):
     model = ModelFactory.create_classication_model(model_name)
 
     # Preprocess the image
-    input_batch = image_preprocessor(image_path)
+    input_batch,_ = image_preprocessor(image_path)
 
     if torch.cuda.is_available():
         input_batch = input_batch.cuda()

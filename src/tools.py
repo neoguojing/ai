@@ -1,11 +1,10 @@
-from PIL import Image
+from PIL import Image ,ImageDraw, ImageFont
 import numpy as np
 import torch
 import torchvision.transforms as transforms
 import torchvision.transforms as T
 import matplotlib.pyplot as plt
 import cv2
-import torchvision.ops as ops
 
 
 def load_image_as_numpy(image_path):
@@ -73,7 +72,7 @@ def image_preprocessor(image_path, target_size=256):
     ])
     input_tensor = preprocess(input_image)
     input_batch = input_tensor.unsqueeze(0)
-    
+
     scale_factor = ()
     # scale_factor = cal_scale_factor((target_size,target_size),input_image.size)
 
@@ -91,32 +90,31 @@ def label_to_class(labels, class_dict):
     return np.array(classes)
 
 
-def draw_detect(image_path,boxes, scores, labels,threshhold=0.5):
+def draw_detect(image_path,boxes, labels, scores, threshold=0.5, label_font=None):
+    """
+    Draw bounding boxes and labels on the image.
+
+    Args:
+        image (PIL.Image): The input image.
+        boxes (List[Tuple[float]]): The bounding boxes in format (xmin, ymin, xmax, ymax).
+        labels (List[str]): The labels corresponding to the bounding boxes.
+        scores (List[float]): The confidence scores for each bounding box.
+        threshold (float, optional): The confidence threshold for displaying a bounding box. Default is 0.5.
+        label_font (str, optional): The path to a TTF font file for rendering label text. Default is None.
+    """
     image = Image.open(image_path)
-    # Draw the bounding boxes and labels on the image
-    drawn_img = ops.draw_detection(image, boxes, labels, scores)
-    # Display the drawn image
-    drawn_img.show()
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.truetype(label_font, size=16) if label_font else None
 
-    # image = T.ToTensor()(image)
-    # image = image.permute(1,2,0).numpy()
-    # fig, ax = plt.subplots(1)
-    # ax.imshow(image)
-
-    # for box, score, label in zip(boxes, scores, labels):
-    #     if score < threshhold:
-    #         continue  # Skip low-confidence detections
-            
-    #     left = box[0] 
-    #     top = box[1] 
-    #     width = box[2] - left 
-    #     height = box[3] - top
-        
-    #     rect = plt.Rectangle((left, top), width, height, fill=False, color='red', linewidth=1.5)
-    #     ax.add_patch(rect)
-    #     ax.text(left, top - 5, f'{label} {score:.2f}', fontsize=8, color='green')
-
-    # plt.show()
+    for box, label, score in zip(boxes, labels, scores):
+        if score >= threshold:
+            draw.rectangle(box, outline='red', width=2)
+            text = f"{label}: {score:.2f}"
+            text_size = draw.textsize(text, font=font)
+            draw.rectangle([box[0], box[1] - text_size[1], box[0] + text_size[0], box[1]], fill='red')
+            draw.text((box[0], box[1] - text_size[1]), text, fill='white', font=font)
+    image.show()
+    return image
 
 def draw_instance(image_path,boxes,labels,masks):
     image = Image.open(image_path)

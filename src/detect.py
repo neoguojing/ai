@@ -25,6 +25,9 @@ def detect_with_model(image_path, model_name):
     with torch.no_grad():
         detections = model(input_batch)
 
+    if model_name == "Yolov5":
+        return detections
+    
     boxes,scores,labels = post_process(detections,scale_factor)
 
     return boxes,scores,labels

@@ -30,24 +30,24 @@ def get_imagenet_labels():
 imagenet_labels = get_imagenet_labels()
 
 
-def get_cifar100_labels():
-    # Download the labels file from the internet
-    if not os.path.exists(CIFAR100_LABELS_FILE):
-        url = "https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz"
-        urllib.request.urlretrieve(url, "cifar-100-python.tar.gz")
-        os.system("tar -xzf cifar-100-python.tar.gz cifar-100-python/meta")
-        os.system("mv cifar-100-python/meta " + CIFAR100_LABELS_FILE)
+# def get_cifar100_labels():
+#     # Download the labels file from the internet
+#     if not os.path.exists(CIFAR100_LABELS_FILE):
+#         url = "https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz"
+#         urllib.request.urlretrieve(url, "cifar-100-python.tar.gz")
+#         os.system("tar -xzf cifar-100-python.tar.gz cifar-100-python/meta")
+#         os.system("mv cifar-100-python/meta " + CIFAR100_LABELS_FILE)
     
-    # Load the labels file
-    with open(CIFAR100_LABELS_FILE, "r") as f:
-        cifar100_labels = f.readlines()
-        cifar100_labels = [label.strip() for label in cifar100_labels]
+#     # Load the labels file
+#     with open(CIFAR100_LABELS_FILE, "r") as f:
+#         cifar100_labels = f.readlines()
+#         cifar100_labels = [label.strip() for label in cifar100_labels]
     
-    # Return the CIFAR-100 labels
-    return cifar100_labels
+#     # Return the CIFAR-100 labels
+#     return cifar100_labels
 
-# Call the function to get the labels from CIFAR-100
-cifar100_labels = get_cifar100_labels()
+# # Call the function to get the labels from CIFAR-100
+# cifar100_labels = get_cifar100_labels()
 
 def get_cifar10_labels():
     # Download the labels file from the internet

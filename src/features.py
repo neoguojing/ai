@@ -16,9 +16,8 @@ def extract_features(image_path, model_name):
 
     with torch.no_grad():
         output = model(input_batch)
-    return output[0]
-
-
+        
+    return output
 
 
 

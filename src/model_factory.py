@@ -12,7 +12,6 @@ class ModelFactory:
     
     MODELS_FEATURE_EXTRACT = {
         'resnet50': lambda: models.resnet50(pretrained=True),
-
         'vgg16': lambda: models.vgg16(pretrained=True),
         'inception_v3': lambda: models.inception_v3(pretrained=True),
         'mobilenet_v2': lambda: models.mobilenet_v2(pretrained=True),

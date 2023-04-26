@@ -128,16 +128,16 @@ class ModelFactory:
         input_data = np.random.randn(1, 3, 224, 224).astype(np.float32)
         output_data = np.empty((1, 1000), dtype=np.float32)
         # Allocate device memory for inputs and outputs
-        d_input = cuda.mem_alloc(1 * input_data.nbytes)
-        d_output = cuda.mem_alloc(1 * output_data.nbytes)
+        d_input = torch.cuda.mem_alloc(1 * input_data.nbytes)
+        d_output = torch.cuda.mem_alloc(1 * output_data.nbytes)
         # Create a stream to run inference
-        stream = cuda.Stream()
+        stream = torch.cuda.Stream()
         # Transfer input data to device
-        cuda.memcpy_htod_async(d_input, input_data, stream)
+        torch.cuda.memcpy_htod_async(d_input, input_data, stream)
         # Run inference
         context.enqueue(1, [int(d_input), int(d_output)])
         # Transfer predictions back from device
-        cuda.memcpy_dtoh_async(output_data, d_output, stream)
+        torch.cuda.memcpy_dtoh_async(output_data, d_output, stream)
         # Synchronize the stream
         stream.synchronize()
         return output_data
@@ -166,14 +166,14 @@ class ModelFactory:
         # Allocate device memory for inputs and outputs
         input_shape = trt_engine.get_binding_shape(0)
         output_shape = trt_engine.get_binding_shape(1)
-        d_input = cuda.mem_alloc(input_shape[0] * input_shape[1] * input_shape[2] * input_shape[3] * 4)
-        d_output = cuda.mem_alloc(output_shape[0] * output_shape[1] * 4)
+        d_input = torch.cuda.mem_alloc(input_shape[0] * input_shape[1] * input_shape[2] * input_shape[3] * 4)
+        d_output = torch.cuda.mem_alloc(output_shape[0] * output_shape[1] * 4)
         
         # Create a stream to run inference
-        stream = cuda.Stream()
+        stream = torch.cuda.Stream()
         
         # Transfer input data to device
-        cuda.memcpy_htod_async(d_input, input_data.ravel().astype(np.float32), stream)
+        torch.cuda.memcpy_htod_async(d_input, input_data.ravel().astype(np.float32), stream)
         
         # Run inference
         context = trt_engine.create_execution_context()
@@ -181,7 +181,7 @@ class ModelFactory:
         
         # Transfer predictions back from device
         output_data = np.empty(output_shape, dtype=np.float32)
-        cuda.memcpy_dtoh_async(output_data, d_output, stream)
+        torch.cuda.memcpy_dtoh_async(output_data, d_output, stream)
         
         # Synchronize the stream
         stream.synchronize()

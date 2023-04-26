@@ -35,11 +35,11 @@ def detect_with_model(image_path, model_name):
 def post_process(outputs,scale_factor):
     preds = outputs[0]
     bboxs = preds['boxes'].detach().cpu().numpy()  # Bounding boxes
-    new_boxes = scale_bbox(bboxs=bboxs,factor=scale_factor)
+    # new_boxes = scale_bbox(bboxs=bboxs,factor=scale_factor)
     scores = preds['scores'].detach().cpu().numpy()  # Confidence scores
     labels = preds['labels'].detach().cpu().numpy()  
     classs = label_to_class(labels,coco_labels)
-    return new_boxes,scores,classs
+    return bboxs,scores,classs
 
 
 def post_process_detections(outputs, confidence_threshold=0.5, nms_iou_threshold=0.5):

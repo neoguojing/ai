@@ -27,15 +27,15 @@ def postprocess(output,scale_factor):
     # Perform postprocessing on the model output
     # get the predicted boxes, labels, and masks for the objects in the image
     boxes = output[0]['boxes'].detach().numpy()
-    new_boxes = scale_bbox(bboxs=boxes,factor=scale_factor)
+    # new_boxes = scale_bbox(bboxs=boxes,factor=scale_factor)
     labels = output[0]['labels'].detach().numpy()
     classs = label_to_class(labels,coco_labels)
 
     masks = output[0]['masks'].detach().numpy()
 
     print("boxes:",boxes)
-    print("new_boxes:",new_boxes)
+    # print("new_boxes:",new_boxes)
     print("labels:",labels)
     print("classs:",classs)
     print("masks:",masks)
-    return new_boxes,classs,masks
+    return boxes,classs,masks

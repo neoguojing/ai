@@ -4,6 +4,9 @@ import torch
 import torchvision.transforms as transforms
 import torchvision.transforms as T
 import matplotlib.pyplot as plt
+import cv2
+import torchvision.ops as ops
+
 
 def load_image_as_numpy(image_path):
     """
@@ -63,15 +66,16 @@ def image_preprocessor(image_path, target_size=256):
 
     input_image = Image.open(image_path)
     preprocess = transforms.Compose([
-        transforms.Resize(target_size),
-        transforms.CenterCrop(224),
+        # transforms.Resize(target_size),
+        # transforms.CenterCrop(224),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
     input_tensor = preprocess(input_image)
     input_batch = input_tensor.unsqueeze(0)
-
-    scale_factor = cal_scale_factor((target_size,target_size),input_image.size)
+    
+    scale_factor = ()
+    # scale_factor = cal_scale_factor((target_size,target_size),input_image.size)
 
     return input_batch, scale_factor
 
@@ -89,42 +93,71 @@ def label_to_class(labels, class_dict):
 
 def draw_detect(image_path,boxes, scores, labels,threshhold=0.5):
     image = Image.open(image_path)
-    image = T.ToTensor()(image)
-    image = image.permute(1,2,0).numpy()
-    fig, ax = plt.subplots(1)
-    ax.imshow(image)
+    # Draw the bounding boxes and labels on the image
+    drawn_img = ops.draw_detection(image, boxes, labels, scores)
+    # Display the drawn image
+    drawn_img.show()
 
-    for box, score, label in zip(boxes, scores, labels):
-        if score < threshhold:
-            continue  # Skip low-confidence detections
+    # image = T.ToTensor()(image)
+    # image = image.permute(1,2,0).numpy()
+    # fig, ax = plt.subplots(1)
+    # ax.imshow(image)
+
+    # for box, score, label in zip(boxes, scores, labels):
+    #     if score < threshhold:
+    #         continue  # Skip low-confidence detections
             
-        left = box[0] 
-        top = box[1] 
-        width = box[2] - left 
-        height = box[3] - top
+    #     left = box[0] 
+    #     top = box[1] 
+    #     width = box[2] - left 
+    #     height = box[3] - top
         
-        rect = plt.Rectangle((left, top), width, height, fill=False, color='red', linewidth=1.5)
-        ax.add_patch(rect)
-        ax.text(left, top - 5, f'{label} {score:.2f}', fontsize=8, color='green')
+    #     rect = plt.Rectangle((left, top), width, height, fill=False, color='red', linewidth=1.5)
+    #     ax.add_patch(rect)
+    #     ax.text(left, top - 5, f'{label} {score:.2f}', fontsize=8, color='green')
 
-    plt.show()
+    # plt.show()
 
 def draw_instance(image_path,boxes,labels,masks):
     image = Image.open(image_path)
-    fig, ax = plt.subplots(1, figsize=(10, 10))
-    ax.imshow(image)
 
-    for i in range(len(boxes)):
-        mask = masks[i, 0]
-        x1, y1, x2, y2 = boxes[i]
-        width = x2 - x1
-        height = y2 - y1
-        ax.imshow(mask, alpha=0.5, extent=[x1, x1+width, y1, y1+height], cmap='Reds')
-        label = labels[i]
-        ax.text(x1, y1, f"{label}", fontsize=12, color='white', bbox=dict(facecolor='red', alpha=0.5, pad=0), 
-            verticalalignment='top')
-
+    # Convert the masks to NumPy arrays and resize them to the size of the input image
+    masks = [cv2.resize(mask, image.shape[1::-1]) for mask in masks]
+    # his means that any pixel with a value greater than 0.5 (i.e., any pixel that belongs to the object with a 
+    # confidence score of at least 0.5) is set to 1, and any pixel with a value less than or equal to 0.5
+    #  (i.e., any pixel that does not belong to the object with a confidence score less than 0.5) is set to 0.
+    masks = np.array(masks) > 0.5
+    
+    # Create a color map for each class ID
+    colors = np.random.uniform(0, 255, size=(len(labels), 3)).astype(np.uint8)
+    for i, (box, mask) in enumerate(zip(boxes, masks)):
+        color = colors[i]
+        alpha = 0.5
+        overlay = np.zeros_like(image)
+        overlay = cv2.fillPoly(overlay, [mask.astype(np.int32)], color.tolist())
+        image = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
+        cv2.rectangle(image, tuple(box[:2]), tuple(box[2:]), color.tolist(), 2)
+    # Show the image using plt.imshow()
+    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    plt.axis('off')
     plt.show()
+
+    # fig, ax = plt.subplots(1, figsize=(10, 10))
+    # ax.imshow(image)
+
+    # for i in range(len(boxes)):
+    #     mask = masks[i, 0]
+    #     x1, y1, x2, y2 = boxes[i]
+    #     width = x2 - x1
+    #     height = y2 - y1
+    #     ax.imshow(mask, alpha=0.5, extent=[x1, x1+width, y1, y1+height], cmap='Reds')
+    #     label = labels[i]
+    #     ax.text(x1, y1, f"{label}", fontsize=12, color='white', bbox=dict(facecolor='red', alpha=0.5, pad=0), 
+    #         verticalalignment='top')
+
+    # plt.show()
+
+
 
 
 

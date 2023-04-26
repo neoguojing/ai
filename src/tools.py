@@ -90,7 +90,7 @@ def label_to_class(labels, class_dict):
     return np.array(classes)
 
 
-def draw_detect(image_path,boxes, labels, scores, threshold=0.5, label_font=None):
+def draw_detect(image_path,boxes, scores,labels, threshold=0.5, label_font=None):
     """
     Draw bounding boxes and labels on the image.
 

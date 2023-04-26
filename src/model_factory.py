@@ -1,6 +1,5 @@
 from torchvision import models
 import numpy as np
-from pycuda import driver as cuda
 from torchvision.models import detection
 import utils
 import torch

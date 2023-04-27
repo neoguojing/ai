@@ -8,7 +8,7 @@ from tools import image_preprocessor
 def extract_features(image_path, model_name):
     model = ModelFactory.create_feature_extract_model(model_name)
 
-    input_batch,_ = image_preprocessor(image_path)
+    input_batch,_,_ = image_preprocessor(image_path)
 
     if torch.cuda.is_available():
         input_batch = input_batch.cuda()

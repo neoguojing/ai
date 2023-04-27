@@ -76,7 +76,8 @@ def image_preprocessor(image_path, target_size=256):
     scale_factor = ()
     # scale_factor = cal_scale_factor((target_size,target_size),input_image.size)
 
-    return input_batch, scale_factor
+    return input_batch, scale_factor, input_image.size
+
 
 
 def label_to_class(labels, class_dict):
@@ -116,43 +117,42 @@ def draw_detect(image_path,boxes, scores,labels, threshold=0.5, label_font=None)
     image.show()
 
 def draw_instance(image_path,boxes,labels,masks):
-    image = cv2.imread(image_path)
+    """
+    Draw bounding boxes and masks on the image.
 
+    Args:
+        image_path (str): The path to the input image.
+        boxes (np.ndarray): The bounding boxes in format (xmin, ymin, xmax, ymax).
+        labels (np.ndarray): The labels corresponding to the bounding boxes.
+        masks (np.ndarray): The segmentation masks corresponding to the bounding boxes.
+    """
+    image = Image.open(image_path)
+    draw = ImageDraw.Draw(image)
+    
     # Convert the masks to NumPy arrays and resize them to the size of the input image
-    masks = [cv2.resize(mask, image.shape[1::-1]) for mask in masks]
-    # his means that any pixel with a value greater than 0.5 (i.e., any pixel that belongs to the object with a 
+    masks = [np.array(Image.fromarray(mask).resize(image.size)) for mask in masks]
+
+    # This means that any pixel with a value greater than 0.5 (i.e., any pixel that belongs to the object with a 
     # confidence score of at least 0.5) is set to 1, and any pixel with a value less than or equal to 0.5
     #  (i.e., any pixel that does not belong to the object with a confidence score less than 0.5) is set to 0.
-    masks = np.array(masks) > 0.5
+    masks = masks > 0.5
     
     # Create a color map for each class ID
     colors = np.random.uniform(0, 255, size=(len(labels), 3)).astype(np.uint8)
     for i, (box, mask) in enumerate(zip(boxes, masks)):
-        color = colors[i]
+        color = tuple(colors[i])
         alpha = 0.5
-        overlay = np.zeros_like(image)
-        overlay = cv2.fillPoly(overlay, [mask.astype(np.int32)], color.tolist())
-        image = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
-        cv2.rectangle(image, tuple(box[:2]), tuple(box[2:]), color.tolist(), 2)
+        overlay = Image.new('RGBA', image.size, (0, 0, 0, 0))
+        draw_mask = ImageDraw.Draw(overlay)
+        draw_mask.polygon(mask.flatten().tolist(), fill=color+(int(alpha*255),))
+        image = Image.alpha_composite(image, overlay).convert('RGB')
+        draw.rectangle(box, outline=color, width=2)
+        draw.text((box[0], box[1]), labels[i], fill=color)
     # Show the image using plt.imshow()
-    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    plt.imshow(image)
     plt.axis('off')
     plt.show()
 
-    # fig, ax = plt.subplots(1, figsize=(10, 10))
-    # ax.imshow(image)
-
-    # for i in range(len(boxes)):
-    #     mask = masks[i, 0]
-    #     x1, y1, x2, y2 = boxes[i]
-    #     width = x2 - x1
-    #     height = y2 - y1
-    #     ax.imshow(mask, alpha=0.5, extent=[x1, x1+width, y1, y1+height], cmap='Reds')
-    #     label = labels[i]
-    #     ax.text(x1, y1, f"{label}", fontsize=12, color='white', bbox=dict(facecolor='red', alpha=0.5, pad=0), 
-    #         verticalalignment='top')
-
-    # plt.show()
 
 
 

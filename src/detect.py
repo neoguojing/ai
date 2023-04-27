@@ -12,7 +12,7 @@ def detect_with_model(image_path, model_name):
     # Get model
     model = ModelFactory.create_detect_model(model_name)
     # Preprocess image
-    input_batch,scale_factor = image_preprocessor(image_path)
+    input_batch,scale_factor,_ = image_preprocessor(image_path)
     
     if model_name == "Yolov5":
         input_batch = Image.open(image_path)

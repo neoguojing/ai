@@ -63,7 +63,12 @@ def image_preprocessor(image_path, target_size=256):
     Preprocesses an image for input into a machine learning model.
     """
 
-    input_image = Image.open(image_path)
+    # input_image = Image.open(image_path)
+    # Load an image using OpenCV
+    input_image = cv2.imread(image_path)
+
+    # Convert the image from BGR to RGB color format
+    input_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
     preprocess = transforms.Compose([
         # transforms.Resize(target_size),
         # transforms.CenterCrop(224),
@@ -76,7 +81,7 @@ def image_preprocessor(image_path, target_size=256):
     scale_factor = ()
     # scale_factor = cal_scale_factor((target_size,target_size),input_image.size)
 
-    return input_batch, scale_factor, input_image.size
+    return input_batch, scale_factor, input_image.shape
 
 
 
@@ -128,14 +133,6 @@ def draw_instance(image_path,boxes,labels,masks):
     """
     image = Image.open(image_path)
     draw = ImageDraw.Draw(image)
-    
-    # Convert the masks to NumPy arrays and resize them to the size of the input image
-    masks = [np.array(Image.fromarray(mask).resize(image.size)) for mask in masks]
-
-    # This means that any pixel with a value greater than 0.5 (i.e., any pixel that belongs to the object with a 
-    # confidence score of at least 0.5) is set to 1, and any pixel with a value less than or equal to 0.5
-    #  (i.e., any pixel that does not belong to the object with a confidence score less than 0.5) is set to 0.
-    masks = masks > 0.5
     
     # Create a color map for each class ID
     colors = np.random.uniform(0, 255, size=(len(labels), 3)).astype(np.uint8)

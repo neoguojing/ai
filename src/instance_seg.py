@@ -20,27 +20,39 @@ def instance_segmentation(image_path,model_name):
     
     with torch.no_grad():
         output = model(input_batch)
-        
+    
+    print(output)
     boxes,labels,masks = postprocess(output,image_size)
     return boxes,labels,masks
 
 def postprocess(output,img_shape,threshold=0.5):
     # Perform postprocessing on the model output
     # get the predicted boxes, labels, and masks for the objects in the image
-    boxes = output[0]['boxes'].detach().numpy()
-    labels = output[0]['labels'].detach().numpy()
+    boxes = output[0]['boxes'].detach().cpu().numpy()
+    labels = output[0]['labels'].detach().cpu().numpy()
     classs = label_to_class(labels,coco_labels)
-    masks = output[0]['masks'].detach().numpy()
-
+    masks = output[0]['masks'].detach().cpu().numpy()
+    scores = output[0]['scores'].detach().cpu().numpy()
+    
+    print(img_shape)
+    print(masks.shape[0])
     # Resize the masks to the size of the input image
-    masks = np.transpose(masks, (1, 2, 0))
-    masks = cv2.resize(masks, img_shape[:2][::-1], interpolation=cv2.INTER_LINEAR)
-    masks = np.transpose(masks, (2, 0, 1))
+    resized_masks = np.zeros((masks.shape[0], img_shape[1], img_shape[0], 1))
+    for i in range(masks.shape[0]):
+#         mask = masks[i, :, :, 0]
+        mask = masks[i]
+        print("masks[i]",masks[i])
+        resized_mask = cv2.resize(mask,(1008, 1800), interpolation=cv2.INTER_LINEAR)
+        print("resized_mask",resized_mask)
+        resized_mask = np.expand_dims(resized_mask, axis=-1)
+        resized_masks[i, :, :, :] = resized_mask
+
 
     # Filter out masks with low confidence
-    scores = output['scores'].detach().cpu().numpy()
+    
     keep = np.where(scores > threshold)[0]
     masks = masks[keep]
+    resized_masks = resized_masks[keep]
     boxes = boxes[keep]
     labels = labels[keep]
     classs = classs[keep]
@@ -66,4 +78,5 @@ def postprocess(output,img_shape,threshold=0.5):
     print("labels:",labels)
     print("classs:",classs)
     print("masks:",masks)
+    print("resized_masks:",resized_masks)
     return boxes,classs,masks

@@ -41,15 +41,14 @@ def postprocess(output,img_shape,threshold=0.5):
     for i in range(masks.shape[0]):
 #         mask = masks[i, :, :, 0]
         mask = masks[i]
-        print("masks[i]",masks[i])
-        resized_mask = cv2.resize(mask,(1008, 1800), interpolation=cv2.INTER_LINEAR)
-        print("resized_mask",resized_mask)
+        mask = mask.transpose(1,2,0)
+        print("masks[i]",mask.shape)
+        resized_mask = cv2.resize(mask,(img_shape[0], img_shape[1]), interpolation=cv2.INTER_AREA)
         resized_mask = np.expand_dims(resized_mask, axis=-1)
+        print("resized_mask",resized_mask.shape)
         resized_masks[i, :, :, :] = resized_mask
 
-
     # Filter out masks with low confidence
-    
     keep = np.where(scores > threshold)[0]
     masks = masks[keep]
     resized_masks = resized_masks[keep]

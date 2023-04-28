@@ -14,68 +14,44 @@ def instance_segmentation(image_path,model_name):
     model = ModelFactory.create_instance_model(model_name)
 
     input_batch,_,image_size = image_preprocessor(image_path)
+    print("image shape",image_size)
     if torch.cuda.is_available():
         input_batch = input_batch.cuda()
         print("using gpu")
     
     with torch.no_grad():
-        output = model(input_batch)
-    
-    print(output)
-    boxes,labels,masks = postprocess(output,image_size)
-    return boxes,labels,masks
+        output = model(input_batch)[0]
+#     print(output)
+    result = postprocess(output,image_size)
+    return result
 
-def postprocess(output,img_shape,threshold=0.5):
-    # Perform postprocessing on the model output
-    # get the predicted boxes, labels, and masks for the objects in the image
-    boxes = output[0]['boxes'].detach().cpu().numpy()
-    labels = output[0]['labels'].detach().cpu().numpy()
+def postprocess(output,img_shape,threshold=0.1,max_detections=100):
+    scores = output['scores'].detach()
+    mask = scores > threshold
+    scores = scores[mask].detach()
+    boxes = output['boxes'][mask].detach()
+    labels = output['labels'][mask].detach()
     classs = label_to_class(labels,coco_labels)
-    masks = output[0]['masks'].detach().cpu().numpy()
-    scores = output[0]['scores'].detach().cpu().numpy()
+    masks = output['masks'][mask].detach()
     
-    print(img_shape)
-    print(masks.shape[0])
-    # Resize the masks to the size of the input image
-    resized_masks = np.zeros((masks.shape[0], img_shape[1], img_shape[0], 1))
-    for i in range(masks.shape[0]):
-#         mask = masks[i, :, :, 0]
-        mask = masks[i]
-        mask = mask.transpose(1,2,0)
-        print("masks[i]",mask.shape)
-        resized_mask = cv2.resize(mask,(img_shape[0], img_shape[1]), interpolation=cv2.INTER_AREA)
-        resized_mask = np.expand_dims(resized_mask, axis=-1)
-        print("resized_mask",resized_mask.shape)
-        resized_masks[i, :, :, :] = resized_mask
-
-    # Filter out masks with low confidence
-    keep = np.where(scores > threshold)[0]
-    masks = masks[keep]
-    resized_masks = resized_masks[keep]
-    boxes = boxes[keep]
-    labels = labels[keep]
-    classs = classs[keep]
-    scores = scores[keep]
-
-    # # Apply non-maximum suppression to the boxes
-    # keep = []
-    # while boxes.shape[0] > 0:
-    #     i = np.argmax(scores)
-    #     keep.append(i)
-    #     overlap = bbox_iou(boxes[i], boxes)
-    #     inds = np.where(overlap <= 0.5)[0]
-    #     boxes = boxes[inds]
-    #     masks = masks[inds]
-    #     labels = labels[inds]
-    #     scores = scores[inds]
-    # boxes = output_boxes[keep]
-    # masks = output_masks[keep]
-    # labels = output_labels[keep]
-
-
-    print("boxes:",boxes)
-    print("labels:",labels)
-    print("classs:",classs)
-    print("masks:",masks)
-    print("resized_masks:",resized_masks)
-    return boxes,classs,masks
+    # Sort the predictions by confidence scores and keep the top-k detections
+    _, indices = scores.sort(descending=True)
+    indices = indices[:max_detections]
+    scores = scores[indices]
+    boxes = boxes[indices]
+    labels = labels[indices]
+    masks = masks[indices]
+    print(masks.shape)
+    # Resize masks to the original image size
+    mask_h, mask_w = masks.shape[-2:]
+    masks = masks.permute(0, 2, 3, 1).contiguous().view(-1, mask_h * mask_w)
+    masks = torch.sigmoid(masks) > 0.5
+    masks = masks.view(-1, mask_h, mask_w, 1).permute(0, 3, 1, 2)
+    print(masks.shape)
+    return {
+        'boxes': boxes,
+        'labels': labels,
+        'scores': scores,
+        'masks': masks,
+        'classes': classs,
+    }

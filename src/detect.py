@@ -12,7 +12,7 @@ def detect_with_model(image_path, model_name):
     # Get model
     model = ModelFactory.create_detect_model(model_name)
     # Preprocess image
-    input_batch,scale_factor,_ = image_preprocessor(image_path)
+    input_batch,_,_ = image_preprocessor(image_path)
     
     if model_name == "Yolov5":
         input_batch = Image.open(image_path)
@@ -28,18 +28,33 @@ def detect_with_model(image_path, model_name):
     if model_name == "Yolov5":
         return detections
     
-    boxes,scores,labels = post_process(detections,scale_factor)
+    output = post_process(detections)
 
-    return boxes,scores,labels
+    return output
 
-def post_process(outputs,scale_factor):
+def post_process(outputs,threshold=0.1,max_detections=100):
     preds = outputs[0]
-    bboxs = preds['boxes'].detach().cpu().numpy()  # Bounding boxes
-    # new_boxes = scale_bbox(bboxs=bboxs,factor=scale_factor)
-    scores = preds['scores'].detach().cpu().numpy()  # Confidence scores
-    labels = preds['labels'].detach().cpu().numpy()  
-    classs = label_to_class(labels,coco_labels)
-    return bboxs,scores,classs
+    scores = preds['scores'].detach()  # Confidence scores
+    mask = scores > threshold
+    
+    scores = scores[mask].detach()
+    boxes = preds['boxes'][mask].detach()
+    labels = preds['labels'][mask].detach()
+    classes = label_to_class(labels,coco_labels)
+    
+    # Sort the predictions by confidence scores and keep the top-k detections
+    _, indices = scores.sort(descending=True)
+    indices = indices[:max_detections]
+    scores = scores[indices]
+    boxes = boxes[indices]
+    labels = labels[indices]
+    
+    return {
+        'boxes': boxes,
+        'labels': labels,
+        'scores': scores,
+        'classes': classes,
+    }
 
 
 def post_process_detections(outputs, confidence_threshold=0.5, nms_iou_threshold=0.5):

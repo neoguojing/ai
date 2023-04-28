@@ -106,7 +106,7 @@ def draw_detect(image_path,result):
     print(tensor_image.shape)
     print(result["classes"].shape)
     
-    overlay_images = utils.draw_bounding_boxes(tensor_image,result["boxes"],labels=result["classes"],colors="red",
+    overlay_images = utils.draw_bounding_boxes(tensor_image,result["boxes"],labels=result["classes"],width=5,colors="red",
                                                fill=False,font=None,font_size=20)
     overlay_images = transforms.ToPILImage()(overlay_images)
     overlay_images.show()
@@ -122,7 +122,7 @@ def draw_instance(image_path,result):
     print(result["classes"].shape)
     # Draw the segmentation masks on top of the images
     overlay_images = utils.draw_segmentation_masks(tensor_image, masks, alpha=0.2)
-    overlay_images = utils.draw_bounding_boxes(tensor_image,result["boxes"],labels=result["classes"],colors="red",
+    overlay_images = utils.draw_bounding_boxes(tensor_image,result["boxes"],labels=result["classes"],width=5,colors="red",
                                                fill=False,font=None,font_size=20)
     overlay_images = transforms.ToPILImage()(overlay_images)
     overlay_images.show()

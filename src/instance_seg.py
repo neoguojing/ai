@@ -7,7 +7,6 @@ sys.path.insert(0, '')
 from  model_factory import ModelFactory
 from tools import image_preprocessor,label_to_class,scale_bbox
 from dataset import coco_labels
-import cv2
 
 # Define the factory function for instance segmentation using Mask R-CNN and YOLACT models with postprocessing
 def instance_segmentation(image_path,model_name):

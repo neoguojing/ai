@@ -5,9 +5,8 @@ FROM guojingneo/pytorch-notebook:latest
 # RUN pip install cython
 # RUN pip install pycocotools
 RUN pip install -qr https://raw.githubusercontent.com/ultralytics/yolov5/master/requirements.txt
-# RUN git clone https://github.com/dbolya/yolact.git 
-# RUN cd yolact && conda env create -f environment.yml \
-#     && wget https://drive.google.com/file/d/1yp7ZbbDwvMiFJEq4ptVKTYTI2VeRDXl0/view?usp=sharing -fR -O yolact_resnet50.pth  
+RUN git clone https://github.com/dbolya/yolact.git && cd yolact && conda env create -f environment.yml \
+    && wget https://drive.google.com/file/d/1yp7ZbbDwvMiFJEq4ptVKTYTI2VeRDXl0/view?usp=sharing -fR -O yolact_resnet50.pth  
 
 # Set the working directory to /app
 WORKDIR /workspace

@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+from PIL import Image
 import sys
 sys.path.insert(0, '')
 from  model_factory import ModelFactory
@@ -17,12 +18,14 @@ def semantic_segmentation(image_path,model_name):
         print("using gpu")
     
     with torch.no_grad():
-        output = model(input_batch)[0]
-#     print(output)
+        output = model(input_batch)['out'][0]
+    print("output shape",output.shape)
+    
     result = postprocess(output,image_size)
     return result
 
 # Define function for postprocessing
 def postprocess(output,image_shape):
-    print(output)
+    output = output.argmax(0)
+    print("post processor shape",output.shape)
     return output

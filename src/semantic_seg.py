@@ -21,11 +21,11 @@ def semantic_segmentation(image_path,model_name):
         output = model(input_batch)['out'][0]
     print("output shape",output.shape)
     
-    result = postprocess(output,image_size)
-    return result
+    result = postprocess(output)
+    return result,image_size
 
 # Define function for postprocessing
-def postprocess(output,image_shape):
+def postprocess(output):
     output = output.argmax(0)
     print("post processor shape",output.shape)
     return output

@@ -127,10 +127,10 @@ def draw_instance(image_path,result):
     overlay_images = transforms.ToPILImage()(overlay_images)
     overlay_images.show()
 
-def draw_masks(image_path,result):
+def draw_masks(image_path,result,nmcl):
     image = Image.open(image_path)
     palette = torch.tensor([2 ** 25 - 1, 2 ** 15 - 1, 2 ** 21 - 1])
-    colors = torch.as_tensor([i for i in range(result.shape[0])])[:, None] * palette
+    colors = torch.as_tensor([i for i in range(nmcl)])[:, None] * palette
     colors = (colors % 255).numpy().astype("uint8")
 
     # plot the semantic segmentation predictions of 21 classes in each color

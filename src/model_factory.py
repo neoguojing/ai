@@ -3,6 +3,7 @@ import numpy as np
 from torchvision.models import detection
 import torch
 import torchvision
+import torchvision.models.segmentation as segmentation
 # import tensorrt
 # import tensorrt as trt
 # import onnx
@@ -38,7 +39,7 @@ class ModelFactory:
 
     MODELS_SEMANTIC = {
         'pspnet': lambda: torchvision.models.segmentation.pspnet(pretrained=True),
-        'deeplabv3': lambda: torchvision.models.segmentation.deeplabv3_resnet101(pretrained=True),
+        'deeplabv3': lambda: torchvision.models.segmentation.deeplabv3_resnet101(weights=segmentation.deeplabv3_resnet101.DeepLabV3_ResNet101_Weights.COCO_WITH_VOC_LABELS_V1),
         'bisenetv1': lambda: torch.hub.load('catalyst-team/deeplabv3', 'deeplabv3_resnet50', pretrained=True)
     }
 

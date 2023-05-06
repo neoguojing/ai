@@ -20,9 +20,9 @@ def semantic_segmentation(image_path,model_name):
     with torch.no_grad():
         output = model(input_batch)['out'][0]
     print("output shape",output.shape)
-    
+    nmcl = output[0]
     result = postprocess(output)
-    return result,image_size
+    return result,nmcl
 
 # Define function for postprocessing
 def postprocess(output):

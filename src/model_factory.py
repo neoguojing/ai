@@ -12,36 +12,36 @@ import torchvision.models.segmentation as segmentation
 class ModelFactory:
     
     MODELS_FEATURE_EXTRACT = {
-        'resnet50': lambda: models.resnet50(weights=models.resnet50.ResNet50_Weights.IMAGENET1K_V1),
-        'vgg16': lambda: models.vgg16(weights=models.vgg16.VGG16_Weights.IMAGENET1K_V1),
-        'inception_v3': lambda: models.inception_v3(weights=models.inception_v3.Inception_V3_Weights.IMAGENET1K_V1),
-        'mobilenet_v2': lambda: models.mobilenet_v2(weights=models.mobilenet_v2.MobileNet_V2_Weights.IMAGENET1K_V1),
-        'densenet121': lambda: models.densenet121(weights=models.densenet121.DenseNet121_Weights.IMAGENET1K_V1)
+        'resnet50': lambda: models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1),
+        'vgg16': lambda: models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1),
+        'inception_v3': lambda: models.inception_v3(weights=models.Inception_V3_Weights.IMAGENET1K_V1),
+        'mobilenet_v2': lambda: models.mobilenet_v2(weights=models.MobileNet_V2_Weights.IMAGENET1K_V1),
+        'densenet121': lambda: models.densenet121(weights=models.DenseNet121_Weights.IMAGENET1K_V1)
     }
 
     MODELS_DETECT = {
-        'RetinaNet': lambda: detection.retinanet_resnet50_fpn(weights=detection.retinanet_resnet50_fpn.RetinaNet_ResNet50_FPN_Weights.COCO_V1,
-                                                               weights_backbone=detection.retinanet_resnet50_fpn.ResNet50_Weights.IMAGENET1K_V1),
-        'FasterRCNN': lambda: detection.fasterrcnn_resnet50_fpn(weights=detection.fasterrcnn_resnet50_fpn.FasterRCNN_ResNet50_FPN_Weights.COCO_V1, 
+        'RetinaNet': lambda: detection.retinanet_resnet50_fpn(weights=detection.RetinaNet_ResNet50_FPN_Weights.COCO_V1,
+                                                               weights_backbone=detection.ResNet50_Weights.IMAGENET1K_V1),
+        'FasterRCNN': lambda: detection.fasterrcnn_resnet50_fpn(weights=detection.FasterRCNN_ResNet50_FPN_Weights.COCO_V1, 
                                                                 pretrained_backbone=True),
-        'SSDLite': lambda: detection.ssd300_vgg16(weights=detection.ssd300_vgg16.SSD300_VGG16_Weights.COCO_V1),
+        'SSDLite': lambda: detection.ssd300_vgg16(weights=detection.SSD300_VGG16_Weights.COCO_V1),
         'Yolov5': lambda: torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
     }
 
     MODELS_CLASSIFICATION = {
-        'resnet50': lambda: models.resnet50(weights=models.resnet50.ResNet50_Weights.IMAGENET1K_V1),
-        'mobilenetv2': lambda: models.mobilenet_v2(weights=models.mobilenet_v2.MobileNet_V2_Weights.IMAGENET1K_V1),
-        'shufflenetv2': lambda: models.shufflenet_v2_x1_0(weights=models.shufflenet_v2_x1_0.ShuffleNet_V2_X1_0_Weights.IMAGENET1K_V1)
+        'resnet50': lambda: models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1),
+        'mobilenetv2': lambda: models.mobilenet_v2(weights=models.MobileNet_V2_Weights.IMAGENET1K_V1),
+        'shufflenetv2': lambda: models.shufflenet_v2_x1_0(weights=models.ShuffleNet_V2_X1_0_Weights.IMAGENET1K_V1)
     }
 
     MODELS_INSTANCE = {
-        'maskrcnn': lambda: torchvision.models.detection.maskrcnn_resnet50_fpn(weights=detection.maskrcnn_resnet50_fpn.MaskRCNN_ResNet50_FPN_Weights.COCO_V1),
+        'maskrcnn': lambda: torchvision.models.detection.maskrcnn_resnet50_fpn(weights=detection.MaskRCNN_ResNet50_FPN_Weights.COCO_V1),
         'yolact': lambda: torch.hub.load('dbolya/yolact', 'yolact_resnet50', pretrained=True)
     }
 
     MODELS_SEMANTIC = {
         'pspnet': lambda: torchvision.models.segmentation.pspnet(pretrained=True),
-        'deeplabv3': lambda: torchvision.models.segmentation.deeplabv3_resnet101(weights=segmentation.deeplabv3_resnet101.DeepLabV3_ResNet101_Weights.COCO_WITH_VOC_LABELS_V1),
+        'deeplabv3': lambda: torchvision.models.segmentation.deeplabv3_resnet101(weights=segmentation.DeepLabV3_ResNet101_Weights.COCO_WITH_VOC_LABELS_V1),
         'bisenetv1': lambda: torch.hub.load('catalyst-team/deeplabv3', 'deeplabv3_resnet50', pretrained=True)
     }
 

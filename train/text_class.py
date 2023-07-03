@@ -78,6 +78,7 @@ def train(dataloader):
     model = AlbertForSequenceClassification.from_pretrained('albert-base-v2',num_labels=4)
     # Define the Albert model
     device = utils.get_device()
+    model.to(device)
     # Define the optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5)
     # Define the loss function
@@ -103,6 +104,7 @@ def train(dataloader):
 def evaluate(dataloader):
     model = load_model()
     device = utils.get_device()
+    model.to(device)
     model.eval()
     with torch.no_grad():
         correct = 0

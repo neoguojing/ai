@@ -3,31 +3,16 @@ import sqlite3
 import pandas as pd
 from transformers import AlbertTokenizerFast,AlbertForSequenceClassification,AlbertTokenizer
 from torch.utils.data import Dataset, DataLoader
-import jieba
-from collections import Counter
 import utils
 
 batch_size = 32
 num_epochs = 3
-max_length = 128
+max_length = 512
 label_map = {'f': 0, 'm': 1,'s': 2,'a': 3}
 # Load the Albert tokenizer
 tokenizer = AlbertTokenizerFast.from_pretrained('albert-base-v2')
-stopwords = []
-with open('baidu_stopwords.txt', 'r', encoding='utf-8') as f:
-    stopwords = f.read().split('\n')
- 
-def clean(text):
-    words = jieba.cut(text, cut_all=False)
-    words = [word for word in words if not word.encode('utf-8').isalnum()]
-    words = [word for word in words if word not in stopwords]
-    word_count = Counter(words)
-    words = [word for word in words if word_count[word] > 2]
-    words = list(set(words))
-    return ' '.join(words),word_count
 
 def default_segmentation(text):
-    text,_ = clean(text)
     return ' '.join(tokenizer.cut(text))
 
 # Define a custom dataset

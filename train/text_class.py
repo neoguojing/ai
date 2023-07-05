@@ -3,17 +3,21 @@ import sqlite3
 import pandas as pd
 from transformers import AlbertTokenizerFast,AlbertForSequenceClassification,AlbertTokenizer
 from torch.utils.data import Dataset, DataLoader
+import torch.nn.functional as F
 import utils
+import os 
+os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 batch_size = 32
-num_epochs = 3
+num_epochs = 5
 max_length = 512
 label_map = {'f': 0, 'm': 1,'s': 2,'a': 3}
+label_rev_map = {0: 'f', 1: 'm',2: 's',3: 'a'}
 # Load the Albert tokenizer
 tokenizer = AlbertTokenizerFast.from_pretrained('albert-base-v2')
 
 def default_segmentation(text):
-    return ' '.join(tokenizer.cut(text))
+    return ' '.join(tokenizer.tokenize(text,padding=True, truncation=True, max_length=max_length))
 
 # Define a custom dataset
 class TextDataset(Dataset):
@@ -27,18 +31,20 @@ class TextDataset(Dataset):
         input_ids = torch.tensor(self.data.loc[index, 'input_ids'])
         attention_mask = torch.tensor(self.data.loc[index, 'attention_mask'])
         label = torch.tensor(self.data.loc[index, 'label'])
-        return input_ids, attention_mask, label
+        text = self.data.loc[index, 'text']
+        id = self.data.loc[index, 'id']
+        return input_ids, attention_mask, label,text,id
 
-def get_dataloader(table):
+def get_dataloader(table,whatfor):
     # Connect to the SQLite database and retrieve data and labels
-    conn = sqlite3.connect('telegram.db')
-    cursor = conn.execute(f"SELECT text, label FROM {table}")
+    conn = sqlite3.connect('/data/vps/telegram/db/telegram.db')
+    cursor = conn.execute(f"SELECT summary, label,chat_id FROM {table} where whatfor = '{whatfor}'")
     rows = cursor.fetchall()
 
     # Convert the data and labels to a Pandas DataFrame
-    df = pd.DataFrame(rows, columns=['text', 'label'])
-
+    df = pd.DataFrame(rows, columns=['text', 'label','id'])
     df['text'] = df['text'].apply(lambda x: default_segmentation(x))
+    print(df['text'])
     # Create input sequences by encoding the text
     df['input_ids'] = df['text'].apply(lambda x: tokenizer.encode(x, add_special_tokens=True, max_length=max_length, truncation=True))
 
@@ -92,28 +98,63 @@ def evaluate(dataloader):
     model.to(device)
     model.eval()
     with torch.no_grad():
+        # correct = 0
+        # total = 0
+        # for batch in dataloader:
+        #     input_ids = batch[0].to(device)
+        #     attention_mask = batch[1].to(device)
+        #     labels = batch[2].to(device)
+
+        #     # Forward pass
+        #     outputs = model(input_ids, attention_mask=attention_mask)
+        #     print(outputs)
+        #     predicted_labels = torch.argmax(outputs.logits, dim=1)
+        #     print(predicted_labels)
+        #     # Compute accuracy
+        #     total += labels.size(0)
+        #     correct += (predicted_labels == labels).sum().item()
+
+        # print('Test Accuracy: {:.2f}%'.format(correct / total * 100))
         correct = 0
         total = 0
         for batch in dataloader:
             input_ids = batch[0].to(device)
             attention_mask = batch[1].to(device)
             labels = batch[2].to(device)
-
+            ids =  batch[4].numpy()
+            origin_label = labels.numpy()
+            print(origin_label)
             # Forward pass
             outputs = model(input_ids, attention_mask=attention_mask)
-            predicted_labels = torch.argmax(outputs.logits, dim=1)
+            logits = outputs.logits
+            probs = F.softmax(logits, dim=1)  # compute softmax probabilities
+            _, predicted_labels = torch.max(probs, dim=1)  # get predicted labels
+
+            # Output classification labels and confidence
+            for i in range(len(predicted_labels)):
+                label = predicted_labels[i].item()
+                confidence = probs[i][label].item()
+                
+                o_index = origin_label[i]
+                if origin_label[i] != label:
+                    print(f"Test example {ids[i]}: Predicted label: {label_rev_map[label]}, Confidence: {confidence};origin lable:{label_rev_map[o_index]}")
 
             # Compute accuracy
             total += labels.size(0)
             correct += (predicted_labels == labels).sum().item()
 
-        print('Test Accuracy: {:.2f}%'.format(correct / total * 100))
+    accuracy = 100 * correct / total
+    print(f"Accuracy: {accuracy:.2f}%")
 
 def load_model(model_path="neo_albert_model"):
     model = AlbertForSequenceClassification.from_pretrained(model_path)
     return  model
  
 
+train_loader = get_dataloader("telegram_user_summary","train")
+train(train_loader)
 
+# test_loader = get_dataloader("telegram_user_summary","test")
+# evaluate(test_loader)
 
 

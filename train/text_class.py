@@ -8,7 +8,7 @@ import utils
 import os 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
-batch_size = 32
+batch_size = 8
 num_epochs = 5
 max_length = 512
 label_map = {'f': 0, 'm': 1,'s': 2,'a': 3}
@@ -37,7 +37,7 @@ class TextDataset(Dataset):
 
 def get_dataloader(table,whatfor):
     # Connect to the SQLite database and retrieve data and labels
-    conn = sqlite3.connect('/data/vps/telegram/db/telegram.db')
+    conn = sqlite3.connect('../telegram/db/telegram.db')
     cursor = conn.execute(f"SELECT summary, label,chat_id FROM {table} where whatfor = '{whatfor}'")
     rows = cursor.fetchall()
 
@@ -76,6 +76,11 @@ def train(dataloader):
     criterion = torch.nn.CrossEntropyLoss()
     # criterion = BCEWithLogitsLoss()
 
+    # # Load checkpoint
+    # checkpoint = torch.load('checkpoint.pth')
+    # model.load_state_dict(checkpoint['model_state_dict'])
+    # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
     # Train the model with the data loader
     for epoch in range(num_epochs):
         for i, batch in enumerate(dataloader):
@@ -90,6 +95,12 @@ def train(dataloader):
             # Print the loss
             if i % 100 == 0:
                 print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(epoch+1, num_epochs, i+1, len(dataloader), loss.item()))
+        
+        # torch.save({
+        #     'model_state_dict': model.state_dict(),
+        #     'optimizer_state_dict': optimizer.state_dict(),
+        #     }, 'checkpoint.pth')
+
         model.save_pretrained('neo_albert_model')
 
 def evaluate(dataloader):
@@ -156,5 +167,4 @@ train(train_loader)
 
 # test_loader = get_dataloader("telegram_user_summary","test")
 # evaluate(test_loader)
-
 

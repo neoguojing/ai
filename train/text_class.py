@@ -152,7 +152,7 @@ def do_train():
 
 def do_test():
     test_loader = get_dataloader("telegram_user_summary","test")
-    evaluate(test_loader,"neo_albert_model92.5")
+    evaluate(test_loader)
 
 def do_inference():
     test_loader = get_dataloader("telegram_user_summary","inference")

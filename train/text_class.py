@@ -9,7 +9,7 @@ import os
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 batch_size = 8
-num_epochs = 5
+num_epochs = 3
 max_length = 512
 label_map = {'f': 0, 'm': 1,'s': 2,'a': 3}
 label_rev_map = {0: 'f', 1: 'm',2: 's',3: 'a'}
@@ -71,7 +71,8 @@ def train(dataloader):
     device = utils.get_device()
     model.to(device)
     # Define the optimizer
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5)
+    # 2e-5 for 3 epchos
+    optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
     # Define the loss function
     criterion = torch.nn.CrossEntropyLoss()
     # criterion = BCEWithLogitsLoss()
@@ -103,29 +104,12 @@ def train(dataloader):
 
         model.save_pretrained('neo_albert_model')
 
-def evaluate(dataloader):
-    model = load_model()
+def evaluate(dataloader,model_path="neo_albert_model"):
+    model = load_model(model_path)
     device = utils.get_device()
     model.to(device)
     model.eval()
     with torch.no_grad():
-        # correct = 0
-        # total = 0
-        # for batch in dataloader:
-        #     input_ids = batch[0].to(device)
-        #     attention_mask = batch[1].to(device)
-        #     labels = batch[2].to(device)
-
-        #     # Forward pass
-        #     outputs = model(input_ids, attention_mask=attention_mask)
-        #     print(outputs)
-        #     predicted_labels = torch.argmax(outputs.logits, dim=1)
-        #     print(predicted_labels)
-        #     # Compute accuracy
-        #     total += labels.size(0)
-        #     correct += (predicted_labels == labels).sum().item()
-
-        # print('Test Accuracy: {:.2f}%'.format(correct / total * 100))
         correct = 0
         total = 0
         for batch in dataloader:
@@ -133,7 +117,7 @@ def evaluate(dataloader):
             attention_mask = batch[1].to(device)
             labels = batch[2].to(device)
             ids =  batch[4].numpy()
-            origin_label = labels.numpy()
+            origin_label = labels.cpu().numpy()
             print(origin_label)
             # Forward pass
             outputs = model(input_ids, attention_mask=attention_mask)
@@ -162,9 +146,17 @@ def load_model(model_path="neo_albert_model"):
     return  model
  
 
-train_loader = get_dataloader("telegram_user_summary","train")
-train(train_loader)
+def do_train():
+    train_loader = get_dataloader("telegram_user_summary","train")
+    train(train_loader)
 
-# test_loader = get_dataloader("telegram_user_summary","test")
-# evaluate(test_loader)
+def do_test():
+    test_loader = get_dataloader("telegram_user_summary","test")
+    evaluate(test_loader,"neo_albert_model92.5")
 
+def do_inference():
+    test_loader = get_dataloader("telegram_user_summary","inference")
+    evaluate(test_loader,"neo_albert_model92.5")
+
+
+do_test()

@@ -5,6 +5,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.data import Dataset, DataLoader
 import utils
+from PIL import Image
 
 # Define the number of epochs
 epochs = 5
@@ -14,6 +15,10 @@ batch_size = 32
 learn_rate=0.001
 
 num_classes = 5
+
+# {'chat': 0, 'class': 1, 'code': 2, 'g': 3, 'other': 4}
+class_map = {0:'chat', 1:'class', 2:'code', 3:'g', 4:'other'}
+
 
 # 定义损失函数和优化器（如果需要）
 criterion = nn.CrossEntropyLoss()
@@ -42,11 +47,7 @@ class ImageFolderDataset(Dataset):
     
     def __getitem__(self, index):
         dataset = self.dataset[index]
-
-        file_names = [dataset.samples[index][0] for index in range(len(dataset.samples))]
-        print(file_names)
-
-        return dataset, file_names
+        return dataset
 
 def get_dataloader(data_dirs):
 
@@ -149,8 +150,7 @@ def evaluate(dataloader):
             inputs, labels = batch
             inputs, labels = inputs.to(device), labels.to(device)
             print(labels)
-            file_names = batch[1]
-            print(file_names)
+
             # 前向传播
             output = model(inputs)
 
@@ -175,6 +175,7 @@ def do_inference(image_path):
     model.eval()
     model.to(device)
 
+
     # Load and preprocess the image
     image = Image.open(image_path)
     image = train_transform(image).unsqueeze(0)
@@ -186,7 +187,17 @@ def do_inference(image_path):
 
     # Get the predicted class
     _, predicted = torch.max(output.data, 1)
-    return predicted.item()
+
+    # Get the confidence of the predicted class
+    softmax = nn.Softmax(dim=1)
+    probabilities = softmax(output)
+    confidence = torch.max(probabilities).item()
+    print(f"Confidence: {confidence * 100:.2f}%")
+
+    # Convert predicted to class name with class_map
+    predicted_class = class_map[predicted.item()]
+    print(predicted_class,predicted)
+    return predicted_class,confidence
 
 
 def do_train():
@@ -198,4 +209,5 @@ def do_evaluate():
     evaluate(data_loader)
 
 # do_train()
-do_evaluate()
+# do_evaluate()
+do_inference("/data/dataset/train/class/2.jpeg")

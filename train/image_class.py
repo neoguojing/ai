@@ -197,6 +197,8 @@ def do_inference(image_path):
     # Convert predicted to class name with class_map
     predicted_class = class_map[predicted.item()]
     print(predicted_class,predicted)
+
+    utils.move_file(image_path,predicted_class)
     return predicted_class,confidence
 
 

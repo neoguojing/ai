@@ -39,6 +39,13 @@ def ocr(image_path):
 
 
 import os
+import shutil
+
+def move_file(image_path,predicted_class):
+    dir_name = os.path.dirname(image_path)
+    file_name = os.path.basename(image_path)
+    dst_path = os.path.join(dir_name, predicted_class,file_name)
+    shutil.move(image_path,dst_path)
 
 def get_subdirectories(path):
     """
@@ -54,7 +61,13 @@ def get_subdirectories(path):
 def recursively_iterate_dir(directory,callback=None):
     subdirectories = get_subdirectories(directory)
     print(subdirectories)
+    
     for sub in subdirectories:
+        os.mkdir(os.path.join(sub, "g"))
+        os.mkdir(os.path.join(sub, "class"))
+        os.mkdir(os.path.join(sub, "code"))
+        os.mkdir(os.path.join(sub, "other"))
+        os.mkdir(os.path.join(sub, "chat"))
         chat_id = int(os.path.basename(sub))
         print(chat_id)
         for root, dirs, files in os.walk(sub):
@@ -67,5 +80,6 @@ def recursively_iterate_dir(directory,callback=None):
                     callback(file_path)
 
 # Call the function with the desired directory
-recursively_iterate_dir("/data/vps/inference",callback=None)
+# recursively_iterate_dir("/data/vps/inference",callback=None)
 
+move_file("/data/vps/inference/1733122226/I","g")

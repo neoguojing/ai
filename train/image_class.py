@@ -212,4 +212,5 @@ def do_evaluate():
 
 # do_train()
 # do_evaluate()
-do_inference("/data/dataset/train/class/2.jpeg")
+# do_inference("/data/dataset/train/class/2.jpeg")
+utils.recursively_iterate_dir("/data/dataset/file",do_inference)

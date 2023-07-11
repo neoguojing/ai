@@ -62,7 +62,7 @@ def recursively_iterate_dir(directory,callback=None):
     subdirectories = get_subdirectories(directory)
     print(subdirectories)
     
-    for sub in subdirectories:
+    for sub in subdirectories[:1]:
         os.mkdir(os.path.join(sub, "g"))
         os.mkdir(os.path.join(sub, "class"))
         os.mkdir(os.path.join(sub, "code"))
@@ -75,11 +75,10 @@ def recursively_iterate_dir(directory,callback=None):
                 # Perform operations on each file
                 file_path = os.path.join(root, file)
                 print(file_path)
-                # Your code here
-                if callback:
-                    callback(file_path)
+                if file.endswith(".jpeg") or file.endswith(".jpg"):                
+                    # Your code here
+                    if callback:
+                        callback(file_path)
 
 # Call the function with the desired directory
 # recursively_iterate_dir("/data/vps/inference",callback=None)
-
-move_file("/data/vps/inference/1733122226/I","g")

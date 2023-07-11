@@ -40,16 +40,32 @@ def ocr(image_path):
 
 import os
 
+def get_subdirectories(path):
+    """
+    获取指定目录下的所有子目录
+    """
+    subdirectories = []
+    for name in os.listdir(path):
+        dir_path = os.path.join(path, name)
+        if os.path.isdir(dir_path):
+            subdirectories.append(dir_path)
+    return subdirectories
+
 def recursively_iterate_dir(directory,callback=None):
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            # Perform operations on each file
-            file_path = os.path.join(root, file)
-            # Your code here
-            print(file_path)
-            if callback:
-                callback(file_path)
+    subdirectories = get_subdirectories(directory)
+    print(subdirectories)
+    for sub in subdirectories:
+        chat_id = int(os.path.basename(sub))
+        print(chat_id)
+        for root, dirs, files in os.walk(sub):
+            for file in files:
+                # Perform operations on each file
+                file_path = os.path.join(root, file)
+                print(file_path)
+                # Your code here
+                if callback:
+                    callback(file_path)
 
 # Call the function with the desired directory
-# recursively_iterate_dir("/data/dataset/test/class",callback=ocr)
+recursively_iterate_dir("/data/vps/inference",callback=None)
 

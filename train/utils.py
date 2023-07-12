@@ -62,20 +62,19 @@ def recursively_iterate_dir(directory,callback=None):
     subdirectories = get_subdirectories(directory)
     print(subdirectories)
     
-    for sub in subdirectories[:1]:
-        os.mkdir(os.path.join(sub, "g"))
-        os.mkdir(os.path.join(sub, "class"))
-        os.mkdir(os.path.join(sub, "code"))
-        os.mkdir(os.path.join(sub, "other"))
-        os.mkdir(os.path.join(sub, "chat"))
+    for sub in subdirectories:
+        os.makedirs(os.path.join(sub, "g"), exist_ok=True)
+        os.makedirs(os.path.join(sub, "class"), exist_ok=True)
+        os.makedirs(os.path.join(sub, "code"), exist_ok=True)
+        os.makedirs(os.path.join(sub, "other"), exist_ok=True)
+        os.makedirs(os.path.join(sub, "chat"), exist_ok=True)
         chat_id = int(os.path.basename(sub))
         print(chat_id)
-        for root, dirs, files in os.walk(sub):
-            for file in files:
-                # Perform operations on each file
-                file_path = os.path.join(root, file)
+        for f in os.listdir(sub):
+            file_path = os.path.join(sub, f)
+            if os.path.isfile(os.path.join(sub, f)):
                 print(file_path)
-                if file.endswith(".jpeg") or file.endswith(".jpg"):                
+                if f.endswith(".jpeg") or f.endswith(".jpg"):                
                     # Your code here
                     if callback:
                         callback(file_path)

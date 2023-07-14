@@ -214,7 +214,7 @@ def do_evaluate():
     data_loader = get_dataloader(["/data/dataset/test"])
     evaluate(data_loader)
 
-do_train()
+# do_train()
 # do_evaluate()
 # do_inference("/data/dataset/train/class/2.jpeg")
-# utils.recursively_iterate_dir("/data/vps/train",do_inference)
+utils.recursively_iterate_dir("/data/vps/image_class",do_inference)

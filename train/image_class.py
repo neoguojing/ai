@@ -42,6 +42,7 @@ class ImageFolderDataset(Dataset):
         self.dataset = datasets.ImageFolder(root_dir, transform=transform)
         self.class_to_idx = self.dataset.class_to_idx
         print(self.class_to_idx)
+
     def __len__(self):
         return len(self.dataset)
     
@@ -203,7 +204,10 @@ def do_inference(image_path):
 
 
 def do_train():
-    data_loader = get_dataloader(["/data/dataset/train"])
+    subs = utils.get_subdirectories("/data/vps/train")
+    print(subs)
+    print(len(subs))
+    data_loader = get_dataloader(subs)
     train(data_loader)
 
 def do_evaluate():
@@ -214,3 +218,4 @@ def do_evaluate():
 # do_evaluate()
 # do_inference("/data/dataset/train/class/2.jpeg")
 utils.recursively_iterate_dir("/data/dataset/file",do_inference)
+utils.recursively_iterate_dir("/data/vps/image_class",do_inference)

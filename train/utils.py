@@ -61,8 +61,9 @@ def get_subdirectories(path):
 def recursively_iterate_dir(directory,callback=None):
     subdirectories = get_subdirectories(directory)
     print(subdirectories)
-    
+    count = 0
     for sub in subdirectories:
+        count += 1
         os.makedirs(os.path.join(sub, "g"), exist_ok=True)
         os.makedirs(os.path.join(sub, "class"), exist_ok=True)
         os.makedirs(os.path.join(sub, "code"), exist_ok=True)
@@ -78,6 +79,27 @@ def recursively_iterate_dir(directory,callback=None):
                     # Your code here
                     if callback:
                         callback(file_path)
-
+        print("curent count:",count)
 # Call the function with the desired directory
 # recursively_iterate_dir("/data/vps/inference",callback=None)
+
+def patch_empty_dir(root_path):
+    # 遍历目录树，查找空目录
+    for root, dirs, files in os.walk(root_path):
+        for dir in dirs:
+            dir_path = os.path.join(root, dir)
+            if not os.listdir(dir_path):
+                print(f"{dir_path} is an empty directory.")
+                print(f"{dir}")
+                if dir == "g":
+                    shutil.copy("./patch/g.jpeg", dir_path)
+                elif dir == "chat":
+                    shutil.copy("./patch/chat.jpeg", dir_path)
+                elif dir == "code":
+                    shutil.copy("./patch/code.jpeg", dir_path)
+                elif dir == "class":
+                    shutil.copy("./patch/class.jpeg", dir_path)
+                elif dir == "other":
+                    shutil.copy("./patch/other.jpeg", dir_path)
+
+# patch_empty_dir("/data/vps/train")

@@ -24,6 +24,7 @@ class ModelCategory:
     SEMANTIC_SEGMENTATION = "semantic_segmentation"
     INSTANCE_SEGMENTATION = "instance_segmentation"
     PANOPTIC_SEGMENTATION = "panoptic_segmentation"
+    KEYPOINTS = "keypoints"
     REGRESSION = "regression"
     TEXT_CLASSIFICATION = "text_classification"
     LANGUAGE_MODELLING = "language_modelling"
@@ -39,8 +40,11 @@ class ModelConfig:
     cfg: None
     def __init__(self,model_type, model_path: str="",cfg_path: str= "",thresh_hold: float = 0.5):
         self.cfg = get_cfg()
-        self.cfg.merge_from_file(cfg_path)
-        self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_path)
+        if cfg_path is not None:
+            self.cfg.merge_from_file(cfg_path)
+        
+        if model_path is not None:
+            self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_path)
         self.thresh_hold = thresh_hold
 
     def get_cfg(self,):
@@ -54,16 +58,35 @@ class ModelFactory:
         self.onstep_detection_cfg = ModelConfig(ModelCategory.ONE_STEP_OBJECT_DETECTION, 
                                          model_path="COCO-Detection/retinanet_R_101_FPN_3x.yaml",
                                          cfg_path="../configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml").get_cfg()
+        # TODO
+        self.extract_cfg = ModelConfig(ModelCategory.IMAGE_FEATURE_EXTRACT, 
+                                         model_path=None,
+                                         cfg_path=None).get_cfg()
         
-    def extract(self, image_path: str):
+        self.semantic_segment_cfg = ModelConfig(ModelCategory.SEMANTIC_SEGMENTATION, 
+                                         model_path="Misc/semantic_R_50_FPN_1x.yaml",
+                                         cfg_path="../configs/Misc/semantic_R_50_FPN_1x.yaml").get_cfg()
+        
+        self.instance_segment_cfg = ModelConfig(ModelCategory.INSTANCE_SEGMENTATION, 
+                                         model_path="COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml",
+                                         cfg_path="../configs/COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml").get_cfg()
+        self.panoptic_segment_cfg = ModelConfig(ModelCategory.INSTANCE_SEGMENTATION, 
+                                         model_path="COCO-PanopticSegmentation/panoptic_fpn_R_101_3x.yaml",
+                                         cfg_path="../configs/COCO-PanopticSegmentation/panoptic_fpn_R_101_3x.yaml").get_cfg()
+        self.keypoints_cfg = ModelConfig(ModelCategory.KEYPOINTS, 
+                                         model_path="COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml",
+                                         cfg_path="../configs/COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml").get_cfg()
+        
+    def extract(self, image_path: str="./test.png"):
         """
         Perform classification on an image using Detectron2.
         """
-        im = cv2.imread(image_path)
-        outputs = self.predictor(im)
-        class_names = outputs["pred_classes"].cpu().numpy().astype(str)
-        scores = outputs["scores"].cpu().numpy()
-        return dict(zip(class_names, scores))
+        p = InferenceBase(self.extract_cfg)
+        print(self.onstep_detection_cfg)
+        img = p.read_image(image_path)
+        outputs,_ = p.run_on_image(img)
+       
+        return outputs
     
     def classify(self, image_path: str):
         """
@@ -80,11 +103,11 @@ class ModelFactory:
         Perform on step object detection on an image using Detectron2.
         """
         p = InferenceBase(self.onstep_detection_cfg,thresh_hold=confidence_threshold)
+        print(self.onstep_detection_cfg)
         img = p.read_image(image_path)
         outputs,vis_output = p.run_on_image(img)
         if vis_output is not None:
             p.save_vis_image(vis_output)
-        print(outputs)
        
         return outputs
     
@@ -93,6 +116,7 @@ class ModelFactory:
         Perform object detection on an image using Detectron2.
         """
         p = InferenceBase(self.detection_cfg,thresh_hold=confidence_threshold)
+        print(self.detection_cfg)
         img = p.read_image(image_path)
         outputs,vis_output = p.run_on_image(img)
         if vis_output is not None:
@@ -101,53 +125,59 @@ class ModelFactory:
        
         return outputs
     
-    def instance_segment(self, image_path: str, output_type: str = "image"):
+    def instance_segment(self, image_path: str="./test.png"):
         """
         Perform instance segmentation on an image using Detectron2.
         """
-        im = cv2.imread(image_path)
-        outputs = self.predictor(im)
-        masks = outputs["masks"].cpu().numpy()
-        classes = outputs["classes"].cpu().numpy().astype(int)
-        scores = outputs["scores"].cpu().numpy()
-        if output_type == "image":
-            v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(self.model_path), scale=1.2)
-            v = v.draw_instance_predictions(predictions=outputs)
-            return v.get_image()[:, :, ::-1]
-        else:
-            return list(zip(masks, classes, scores))
+        p = InferenceBase(self.instance_segment_cfg)
+        img = p.read_image(image_path)
+        outputs,vis_output = p.run_on_image(img)
+        if vis_output is not None:
+            p.save_vis_image(vis_output)
+        print(outputs)
+       
+        return outputs
         
-    def semantic_segment(self, image_path: str, output_type: str = "image"):
+    def semantic_segment(self, image_path: str="./test.png"):
         """
         Perform instance segmentation on an image using Detectron2.
         """
-        im = cv2.imread(image_path)
-        outputs = self.predictor(im)
-        masks = outputs["masks"].cpu().numpy()
-        classes = outputs["classes"].cpu().numpy().astype(int)
-        scores = outputs["scores"].cpu().numpy()
-        if output_type == "image":
-            v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(self.model_path), scale=1.2)
-            v = v.draw_instance_predictions(predictions=outputs)
-            return v.get_image()[:, :, ::-1]
-        else:
-            return list(zip(masks, classes, scores))
+        p = InferenceBase(self.semantic_segment_cfg)
+        img = p.read_image(image_path)
+        outputs,vis_output = p.run_on_image(img)
+        if vis_output is not None:
+            p.save_vis_image(vis_output)
+        print(outputs)
+        return outputs
     
-    def panoptic_segment(self, image_path: str, output_type: str = "image"):
+    def panoptic_segment(self, image_path: str="./test.png"):
         """
         Perform panoptic segmentation on an image using Detectron2.
         """
-        im = cv2.imread(image_path)
-        outputs = self.predictor(im)
-        panoptic_seg = outputs["panoptic_seg"].cpu().numpy()
-        if output_type == "image":
-            v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(self.model_path), scale=1.2)
-            v = v.draw_panoptic_seg_predictions(panoptic_seg.to("cpu"), outputs["segments_info"])
-            return v.get_image()[:, :, ::-1]
-        else:
-            return panoptic_seg
+        p = InferenceBase(self.panoptic_segment_cfg)
+        img = p.read_image(image_path)
+        outputs,vis_output = p.run_on_image(img)
+        if vis_output is not None:
+            p.save_vis_image(vis_output)
+        print(outputs)
+        return outputs
+        
+    def keypoint(self, image_path: str="./test.png"):
+        """
+        Perform keypoint on an image using Detectron2.
+        """
+        p = InferenceBase(self.keypoints_cfg)
+        print(self.detection_cfg)
+        img = p.read_image(image_path)
+        outputs,vis_output = p.run_on_image(img)
+        if vis_output is not None:
+            p.save_vis_image(vis_output)
+        print(outputs)
+       
+        return outputs
         
 if __name__ == "__main__":
     f = ModelFactory()
-    f.onstep_detect()
+    f.semantic_segment()
+
     

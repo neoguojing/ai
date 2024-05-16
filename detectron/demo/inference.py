@@ -47,6 +47,11 @@ class ModelConfig:
             self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_path)
         self.thresh_hold = thresh_hold
 
+        if model_type == ModelCategory.OBJECT_DETECTION:
+            pass
+        elif model_type == ModelCategory.IMAGE_FEATURE_EXTRACT:
+            self.cfg.MODEL.RESNETS.OUT_FEATURES = ["res2", "res3", "res4", "res5"] 
+
     def get_cfg(self,):
         return self.cfg
 
@@ -60,8 +65,12 @@ class ModelFactory:
                                          cfg_path="../configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml").get_cfg()
         # TODO
         self.extract_cfg = ModelConfig(ModelCategory.IMAGE_FEATURE_EXTRACT, 
-                                         model_path=None,
-                                         cfg_path=None).get_cfg()
+                                         model_path="COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml",
+                                         cfg_path="../configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml").get_cfg()
+        
+        self.classification_cfg = ModelConfig(ModelCategory.IMAGE_CLASSIFICATION, 
+                                         model_path="COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml",
+                                         cfg_path="../configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml").get_cfg()
         
         self.semantic_segment_cfg = ModelConfig(ModelCategory.SEMANTIC_SEGMENTATION, 
                                          model_path="Misc/semantic_R_50_FPN_1x.yaml",
@@ -81,9 +90,7 @@ class ModelFactory:
         """
         Perform classification on an image using Detectron2.
         """
-        p = InferenceBase(self.extract_cfg)
-        print(self.onstep_detection_cfg)
-        img = p.read_image(image_path)
+
         outputs,_ = p.run_on_image(img)
        
         return outputs
@@ -92,11 +99,10 @@ class ModelFactory:
         """
         Perform classification on an image using Detectron2.
         """
-        im = cv2.imread(image_path)
-        outputs = self.predictor(im)
-        class_names = outputs["pred_classes"].cpu().numpy().astype(str)
-        scores = outputs["scores"].cpu().numpy()
-        return dict(zip(class_names, scores))
+        import torch
+        num_classes = 1000  # 示例：ImageNet 数据集的类别数
+        model.fc = torch.nn.Linear(num_features, num_classes)  # 替换全连接层
+        return 
     
     def onstep_detect(self, image_path: str= "./test.png", confidence_threshold: float = 0.5):
         """

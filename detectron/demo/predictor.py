@@ -15,6 +15,7 @@ from detectron2.utils.video_visualizer import VideoVisualizer
 from detectron2.utils.visualizer import ColorMode, Visualizer
 from detectron2 import model_zoo
 
+
 class InferenceBase:
     def __init__(self, cfg, instance_mode=ColorMode.IMAGE, parallel=False,device="cpu",thresh_hold=0.5):
         """
@@ -42,6 +43,8 @@ class InferenceBase:
 
         self.output_dir = "./"
         self.thresh_hold = thresh_hold
+
+        
 
     def save_vis_image(self,visimage):
         import uuid

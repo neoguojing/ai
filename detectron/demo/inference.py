@@ -13,7 +13,9 @@ from detectron2.config import get_cfg
 from detectron2.utils.visualizer import Visualizer
 from detectron2.data import MetadataCatalog, DatasetCatalog
 from detectron2.utils.visualizer import ColorMode
+import detectron2.data.transforms as T
 from predictor import InferenceBase
+from model_factory import TorchModelFactory
 
 # 定义模型类别的常量
 class ModelCategory:
@@ -38,7 +40,7 @@ class ModelCategory:
 
 class ModelConfig:
     cfg: None
-    def __init__(self,model_type, model_path: str="",cfg_path: str= "",thresh_hold: float = 0.5):
+    def __init__(self,model_type, model_path: str=None,cfg_path: str= None,thresh_hold: float = 0.5):
         self.cfg = get_cfg()
         if cfg_path is not None:
             self.cfg.merge_from_file(cfg_path)
@@ -63,18 +65,6 @@ class ModelFactory:
         self.onstep_detection_cfg = ModelConfig(ModelCategory.ONE_STEP_OBJECT_DETECTION, 
                                          model_path="COCO-Detection/retinanet_R_101_FPN_3x.yaml",
                                          cfg_path="../configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml").get_cfg()
-        # TODO
-        self.extract_cfg = ModelConfig(ModelCategory.IMAGE_FEATURE_EXTRACT, 
-                                         model_path="COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml",
-                                         cfg_path="../configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml").get_cfg()
-        
-        self.classification_cfg = ModelConfig(ModelCategory.IMAGE_CLASSIFICATION, 
-                                         model_path="COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml",
-                                         cfg_path="../configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml").get_cfg()
-        
-        self.semantic_segment_cfg = ModelConfig(ModelCategory.SEMANTIC_SEGMENTATION, 
-                                         model_path="Misc/semantic_R_50_FPN_1x.yaml",
-                                         cfg_path="../configs/Misc/semantic_R_50_FPN_1x.yaml").get_cfg()
         
         self.instance_segment_cfg = ModelConfig(ModelCategory.INSTANCE_SEGMENTATION, 
                                          model_path="COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml",
@@ -86,22 +76,42 @@ class ModelFactory:
                                          model_path="COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml",
                                          cfg_path="../configs/COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml").get_cfg()
         
+        self.aug = T.ResizeShortestEdge(
+            [256, 256], 256
+        )
+    
+    def image_processor(self,original_image):
+        import torch
+        # if self.input_format == "RGB":
+        #         # whether the model expects BGR inputs or RGB
+        #         original_image = original_image[:, :, ::-1]
+        height, width = original_image.shape[:2]
+        image = self.aug.get_transform(original_image).apply_image(original_image)
+        image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+        image.to(self.cfg.MODEL.DEVICE)
+
+        inputs = {"image": image, "height": height, "width": width}
+        return inputs
+
     def extract(self, image_path: str="./test.png"):
         """
         Perform classification on an image using Detectron2.
         """
+        
+        model = TorchModelFactory.create_feature_extract_model("resnet50")
 
-        outputs,_ = p.run_on_image(img)
-       
-        return outputs
+        img = p.read_image(image_path)
+
+        with torch.no_grad():
+            output = model(input_batch)
+            
+        return output
     
     def classify(self, image_path: str):
         """
         Perform classification on an image using Detectron2.
         """
-        import torch
-        num_classes = 1000  # 示例：ImageNet 数据集的类别数
-        model.fc = torch.nn.Linear(num_features, num_classes)  # 替换全连接层
+        
         return 
     
     def onstep_detect(self, image_path: str= "./test.png", confidence_threshold: float = 0.5):
@@ -148,13 +158,8 @@ class ModelFactory:
         """
         Perform instance segmentation on an image using Detectron2.
         """
-        p = InferenceBase(self.semantic_segment_cfg)
-        img = p.read_image(image_path)
-        outputs,vis_output = p.run_on_image(img)
-        if vis_output is not None:
-            p.save_vis_image(vis_output)
-        print(outputs)
-        return outputs
+        model = TorchModelFactory.create_semantic_model("deeplabv3")
+        return model
     
     def panoptic_segment(self, image_path: str="./test.png"):
         """

@@ -27,7 +27,7 @@ def get_imagenet_labels():
     return class_names
 
 # Call the function to get the labels from ImageNet
-imagenet_labels = get_imagenet_labels()
+# imagenet_labels = get_imagenet_labels()
 
 
 # def get_cifar100_labels():
@@ -65,7 +65,7 @@ def get_cifar10_labels():
     return cifar10_labels
 
 # Call the function to get the labels from CIFAR-10
-cifar10_labels = get_cifar10_labels()
+# cifar10_labels = get_cifar10_labels()
 
 
 def get_pascal_voc_labels():
@@ -83,7 +83,7 @@ def get_pascal_voc_labels():
     return pascal_voc_labels
 
 # Call the function to get the labels from Pascal VOC
-pascal_voc_labels = get_pascal_voc_labels()
+# pascal_voc_labels = get_pascal_voc_labels()
 
 
 def get_places365_labels():
@@ -101,7 +101,7 @@ def get_places365_labels():
     return places365_labels
 
 # Call the function to get the labels from Places365
-places365_labels = get_places365_labels()
+# places365_labels = get_places365_labels()
 
 def get_coco_labels():
     # Download the labels file from the internet
@@ -118,4 +118,4 @@ def get_coco_labels():
     return coco_labels
 
 # Call the function to get the labels from COCO
-coco_labels = get_coco_labels()
+# coco_labels = get_coco_labels()

@@ -1,14 +1,14 @@
 import torch
 import sys
 sys.path.insert(0, '')
-from  model_factory import ModelFactory
+from  model_factory import TorchModelFactory
 from tools import image_preprocessor
 from dataset import imagenet_labels
 
 # Define the classification function for multi-class classification
 def classification(image_path, model_name):
     # Get the model
-    model = ModelFactory.create_classication_model(model_name)
+    model = TorchModelFactory.create_classication_model(model_name)
 
     # Preprocess the image
     input_batch,_,_ = image_preprocessor(image_path)

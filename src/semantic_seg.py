@@ -19,10 +19,14 @@ def semantic_segmentation(image_path,model_name):
     
     with torch.no_grad():
         output = model(input_batch)['out'][0]
-    print("output shape",output.shape,output)
-    nmcl = output.shape[0]
-    result = postprocess(output)
-    return result,nmcl
+    print("output shape",output.shape)
+
+    output_predictions = output.argmax(0)
+    # nmcl = output.shape[0]
+    # result = postprocess(output)
+    print(output_predictions)
+    print("output_predictions shape",output_predictions.shape)
+    return output_predictions
 
 # Define function for postprocessing
 def postprocess(output):

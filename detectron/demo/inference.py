@@ -17,6 +17,7 @@ import detectron2.data.transforms as T
 from predictor import InferenceBase
 from model_factory import TorchModelFactory
 import torch
+import torchvision.transforms as transforms
 
 # 定义模型类别的常量
 class ModelCategory:
@@ -70,6 +71,10 @@ class ModelFactory:
         self.instance_segment_cfg = ModelConfig(ModelCategory.INSTANCE_SEGMENTATION, 
                                          model_path="COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml",
                                          cfg_path="../configs/COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml").get_cfg()
+        self.semantic_segment_cfg = ModelConfig(ModelCategory.SEMANTIC_SEGMENTATION, 
+                                        #  model_path="PascalVOC-Detection/faster_rcnn_R_50_FPN.yaml",
+                                         cfg_path="../configs/PascalVOC-Detection/faster_rcnn_R_50_FPN.yaml").get_cfg()
+        
         self.panoptic_segment_cfg = ModelConfig(ModelCategory.INSTANCE_SEGMENTATION, 
                                          model_path="COCO-PanopticSegmentation/panoptic_fpn_R_101_3x.yaml",
                                          cfg_path="../configs/COCO-PanopticSegmentation/panoptic_fpn_R_101_3x.yaml").get_cfg()
@@ -78,22 +83,30 @@ class ModelFactory:
                                          cfg_path="../configs/COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml").get_cfg()
         
         self.aug = T.ResizeShortestEdge(
-            [256, 256], 256
+            [224, 224], 224
         )
     
-    def image_processor(self,original_image):
-        
-        # if self.input_format == "RGB":
-        #         # whether the model expects BGR inputs or RGB
-        #         original_image = original_image[:, :, ::-1]
-        height, width = original_image.shape[:2]
-        image = self.aug.get_transform(original_image).apply_image(original_image)
-        image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
-        image.to("cpu")
+    def image_processor(self,image_path,resize=256,crop=224):
+        from PIL import Image
+        input_image = Image.open(image_path).convert('RGB')
+        preprocess = transforms.Compose([
+            transforms.Resize(resize) if resize is not None else lambda x: x,
+            transforms.CenterCrop(crop) if crop is not None else lambda x: x,
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+        input_tensor = preprocess(input_image)
+        input_batch = input_tensor.unsqueeze(0)
+        return input_batch
 
-        inputs = {"image": image, "height": height, "width": width}
-        return inputs
+    def prepare_meta(self,dataset="voc"):
+        meta = None
+        if dataset == "voc":
+            meta = MetadataCatalog.get("voc_2007_test")
+            meta.stuff_classes = meta.thing_classes
+            meta.stuff_classes.insert(0, "background")
 
+        return meta
     def extract(self, image_path: str="./test.png"):
         """
         Perform classification on an image using Detectron2.
@@ -101,38 +114,31 @@ class ModelFactory:
         
         model = TorchModelFactory.create_feature_extract_model("resnet")
 
-        from detectron2.data.detection_utils import read_image
     
-        img = read_image(image_path)
-        input = self.image_processor(img)
+        input_batch = self.image_processor(image_path)
 
         with torch.no_grad():
-            input_batch = input["image"].unsqueeze(0)
             output = model(input_batch)
             
         result = {"features":output}
-        print(result)
+        # print(result)
         return result
     
-    def classify(self, image_path: str="./cat.jpg"):
+    def classify(self, image_path: str="./test.png"):
         """
         Perform classification on an image using Detectron2.
         """
         model = TorchModelFactory.create_feature_extract_model("resnet")
 
-        from detectron2.data.detection_utils import read_image
-    
-        img = read_image(image_path)
-        input = self.image_processor(img)
+        input_batch = self.image_processor(image_path)
 
         with torch.no_grad():
-            input_batch = input["image"].unsqueeze(0)
             output = model(input_batch)
         
         probabilities = torch.nn.functional.softmax(output[0], dim=0)
-        print(probabilities,probabilities.shape)
+        # print(probabilities,probabilities.shape)
         top5_prob, top5_catid = torch.topk(probabilities, 1)
-        print(top5_prob,top5_catid)
+        # print(top5_prob,top5_catid)
         result = {"features":output,"pred_classes":top5_catid,"scores":top5_prob}
         return result
     
@@ -181,7 +187,27 @@ class ModelFactory:
         Perform instance segmentation on an image using Detectron2.
         """
         model = TorchModelFactory.create_semantic_model("deeplabv3")
-        return model
+        input_batch = self.image_processor(image_path,resize=None,crop=None)
+
+        with torch.no_grad():
+            output = model(input_batch)["out"][0]
+        print("output shape",output.shape)
+        output_predictions = output.argmax(0)
+        print(output_predictions)
+        print("output_predictions shape",output_predictions.shape)
+
+        from detectron2.data.detection_utils import read_image
+        import uuid
+        image = read_image(image_path)
+        voc_train_metadata = self.prepare_meta("voc")
+        print(voc_train_metadata)
+        visualizer = Visualizer(image,metadata=voc_train_metadata)
+
+        visimage = visualizer.draw_sem_seg(output_predictions)                    
+        unique_id = uuid.uuid1()
+        visualized_image = visimage.get_image()[:, :, ::-1]
+        cv2.imwrite("./"+str(unique_id)+".png", visualized_image)
+        return output_predictions
     
     def panoptic_segment(self, image_path: str="./test.png"):
         """
@@ -211,7 +237,7 @@ class ModelFactory:
         
 if __name__ == "__main__":
     f = ModelFactory()
-    # f.semantic_segment()
-    f.classify()
+    f.semantic_segment()
+    # f.classify()
 
     

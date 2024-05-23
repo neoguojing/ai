@@ -16,6 +16,7 @@ from detectron2.utils.visualizer import ColorMode
 import detectron2.data.transforms as T
 from predictor import InferenceBase
 from model_factory import TorchModelFactory
+import torch
 
 # 定义模型类别的常量
 class ModelCategory:
@@ -81,14 +82,14 @@ class ModelFactory:
         )
     
     def image_processor(self,original_image):
-        import torch
+        
         # if self.input_format == "RGB":
         #         # whether the model expects BGR inputs or RGB
         #         original_image = original_image[:, :, ::-1]
         height, width = original_image.shape[:2]
         image = self.aug.get_transform(original_image).apply_image(original_image)
         image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
-        image.to(self.cfg.MODEL.DEVICE)
+        image.to("cpu")
 
         inputs = {"image": image, "height": height, "width": width}
         return inputs
@@ -98,21 +99,42 @@ class ModelFactory:
         Perform classification on an image using Detectron2.
         """
         
-        model = TorchModelFactory.create_feature_extract_model("resnet50")
+        model = TorchModelFactory.create_feature_extract_model("resnet")
 
-        img = p.read_image(image_path)
+        from detectron2.data.detection_utils import read_image
+    
+        img = read_image(image_path)
+        input = self.image_processor(img)
 
         with torch.no_grad():
+            input_batch = input["image"].unsqueeze(0)
             output = model(input_batch)
             
-        return output
+        result = {"features":output}
+        print(result)
+        return result
     
-    def classify(self, image_path: str):
+    def classify(self, image_path: str="./cat.jpg"):
         """
         Perform classification on an image using Detectron2.
         """
+        model = TorchModelFactory.create_feature_extract_model("resnet")
+
+        from detectron2.data.detection_utils import read_image
+    
+        img = read_image(image_path)
+        input = self.image_processor(img)
+
+        with torch.no_grad():
+            input_batch = input["image"].unsqueeze(0)
+            output = model(input_batch)
         
-        return 
+        probabilities = torch.nn.functional.softmax(output[0], dim=0)
+        print(probabilities,probabilities.shape)
+        top5_prob, top5_catid = torch.topk(probabilities, 1)
+        print(top5_prob,top5_catid)
+        result = {"features":output,"pred_classes":top5_catid,"scores":top5_prob}
+        return result
     
     def onstep_detect(self, image_path: str= "./test.png", confidence_threshold: float = 0.5):
         """
@@ -189,6 +211,7 @@ class ModelFactory:
         
 if __name__ == "__main__":
     f = ModelFactory()
-    f.semantic_segment()
+    # f.semantic_segment()
+    f.classify()
 
     

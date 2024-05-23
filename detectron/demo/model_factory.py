@@ -12,7 +12,7 @@ import torchvision.models.segmentation as segmentation
 class TorchModelFactory:
     
     MODELS_FEATURE_EXTRACT = {
-        'resnet50': lambda: models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1),
+        'resnet': lambda: models.resnet101(weights=models.ResNet101_Weights.IMAGENET1K_V1),
         'vgg16': lambda: models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1),
         'inception_v3': lambda: models.inception_v3(weights=models.Inception_V3_Weights.IMAGENET1K_V1),
         'mobilenet_v2': lambda: models.mobilenet_v2(weights=models.MobileNet_V2_Weights.IMAGENET1K_V1),
@@ -29,7 +29,7 @@ class TorchModelFactory:
     }
 
     MODELS_CLASSIFICATION = {
-        'resnet50': lambda: models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1),
+        'resnet': lambda: models.resnet101(weights=models.ResNet101_Weights.IMAGENET1K_V1),
         'mobilenetv2': lambda: models.mobilenet_v2(weights=models.MobileNet_V2_Weights.IMAGENET1K_V1),
         'shufflenetv2': lambda: models.shufflenet_v2_x1_0(weights=models.ShuffleNet_V2_X1_0_Weights.IMAGENET1K_V1)
     }

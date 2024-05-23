@@ -3,7 +3,7 @@ import os
 import json
 import pickle
 
-DATASET_PREFIX = os.environ.get('DATASET_PREFIX', '')
+DATASET_PREFIX = os.environ.get('DATASET_PREFIX', '../dataset/')
 IMAGENET_LABELS_FILE = DATASET_PREFIX + "imagenet_classes.txt"
 CIFAR100_LABELS_FILE = DATASET_PREFIX + "cifar100_labels.txt"
 CIFAR10_LABELS_FILE = DATASET_PREFIX + "cifar10_labels.meta"
@@ -27,7 +27,7 @@ def get_imagenet_labels():
     return class_names
 
 # Call the function to get the labels from ImageNet
-# imagenet_labels = get_imagenet_labels()
+imagenet_labels = get_imagenet_labels()
 
 
 # def get_cifar100_labels():

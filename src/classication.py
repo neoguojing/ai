@@ -33,10 +33,12 @@ def post_processor(output):
     print(probabilities)
 
     top5_prob, top5_catid = torch.topk(probabilities, 5)
+    print(top5_prob, top5_catid)
     output = []
     for i in range(top5_prob.size(0)):
         print(imagenet_labels[top5_catid[i]], top5_prob[i].item())
         output.append({imagenet_labels[top5_catid[i]]:top5_prob[i].item()})
+
     # # Get the index of the predicted class
     # _, index = torch.max(output, 1)
     # # Convert the index to a human-readable label
@@ -44,3 +46,5 @@ def post_processor(output):
     return output
 
 
+if __name__ == "__main__":
+    classification(image_path="../detectron/demo/test.png",model_name="resnet")

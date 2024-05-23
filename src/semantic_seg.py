@@ -19,7 +19,7 @@ def semantic_segmentation(image_path,model_name):
     
     with torch.no_grad():
         output = model(input_batch)['out'][0]
-    print("output shape",output.shape)
+    print("output shape",output.shape,output)
     nmcl = output.shape[0]
     result = postprocess(output)
     return result,nmcl
@@ -32,4 +32,4 @@ def postprocess(output):
 
 
 if __name__ == "__main__":
-    semantic_segmentation(image_path="../detection/demo/test.png",model_name="deeplabv3")
+    semantic_segmentation(image_path="../detectron/demo/test.png",model_name="deeplabv3")

@@ -100,6 +100,7 @@ class ModelFactory:
         return input_batch
 
     def prepare_meta(self,dataset="voc"):
+        print("--------------",self.semantic_segment_cfg.MODEL.WEIGHTS,self.semantic_segment_cfg.DATASETS.TEST)
         meta = None
         if dataset == "voc":
             meta = MetadataCatalog.get("voc_2007_test")
@@ -237,7 +238,7 @@ class ModelFactory:
         
 if __name__ == "__main__":
     f = ModelFactory()
-    f.semantic_segment()
+    f.prepare_meta()
     # f.classify()
 
     

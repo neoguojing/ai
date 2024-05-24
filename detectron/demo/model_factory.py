@@ -25,7 +25,7 @@ class TorchModelFactory:
         'FasterRCNN': lambda: detection.fasterrcnn_resnet50_fpn(weights=detection.FasterRCNN_ResNet50_FPN_Weights.COCO_V1, 
                                                                 weights_backbone=models.ResNet50_Weights.IMAGENET1K_V1),
         'SSDLite': lambda: detection.ssd300_vgg16(weights=detection.SSD300_VGG16_Weights.COCO_V1),
-        'Yolov5': lambda: torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+        'Yolo': lambda: torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
     }
 
     MODELS_CLASSIFICATION = {

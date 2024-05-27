@@ -18,6 +18,7 @@ from predictor import InferenceBase
 from model_factory import TorchModelFactory
 import torch
 import torchvision.transforms as transforms
+from PIL import Image
 
 # 定义模型类别的常量
 class ModelCategory:
@@ -51,10 +52,19 @@ class ModelConfig:
             self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_path)
         self.thresh_hold = thresh_hold
 
-        if model_type == ModelCategory.OBJECT_DETECTION:
-            pass
-        elif model_type == ModelCategory.IMAGE_FEATURE_EXTRACT:
-            self.cfg.MODEL.RESNETS.OUT_FEATURES = ["res2", "res3", "res4", "res5"] 
+        
+        if model_type == ModelCategory.IMAGE_FEATURE_EXTRACT:
+            self.cfg.TASK_TYPE = "feature"
+            self.cfg.MODEL.WEIGHTS = None
+        elif model_type == ModelCategory.IMAGE_CLASSIFICATION:
+            self.cfg.TASK_TYPE = "classfication"
+            self.cfg.MODEL.WEIGHTS = None
+        elif model_type == ModelCategory.SEMANTIC_SEGMENTATION:
+            self.cfg.TASK_TYPE = "semantic"
+            self.cfg.MODEL.WEIGHTS = None
+        # elif model_type == ModelCategory.OBJECT_DETECTION:
+        #     self.cfg.TASK_TYPE = "detect"
+        #     self.cfg.MODEL.WEIGHTS = None
 
     def get_cfg(self,):
         return self.cfg
@@ -64,6 +74,15 @@ class ModelFactory:
         self.detection_cfg = ModelConfig(ModelCategory.OBJECT_DETECTION, 
                                          model_path="COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml",
                                          cfg_path="../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml").get_cfg()
+        
+        self.feature_cfg = ModelConfig(ModelCategory.IMAGE_FEATURE_EXTRACT, 
+                                         model_path=None,
+                                         cfg_path=None).get_cfg()
+        
+        self.classification_cfg = ModelConfig(ModelCategory.IMAGE_CLASSIFICATION, 
+                                         model_path=None,
+                                         cfg_path=None).get_cfg()
+        
         self.onstep_detection_cfg = ModelConfig(ModelCategory.ONE_STEP_OBJECT_DETECTION, 
                                          model_path="COCO-Detection/retinanet_R_101_FPN_3x.yaml",
                                          cfg_path="../configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml").get_cfg()
@@ -72,7 +91,7 @@ class ModelFactory:
                                          model_path="COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml",
                                          cfg_path="../configs/COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml").get_cfg()
         self.semantic_segment_cfg = ModelConfig(ModelCategory.SEMANTIC_SEGMENTATION, 
-                                        #  model_path="PascalVOC-Detection/faster_rcnn_R_50_FPN.yaml",
+                                         model_path=None,
                                          cfg_path="../configs/PascalVOC-Detection/faster_rcnn_R_50_FPN.yaml").get_cfg()
         
         self.panoptic_segment_cfg = ModelConfig(ModelCategory.INSTANCE_SEGMENTATION, 
@@ -111,37 +130,34 @@ class ModelFactory:
     def extract(self, image_path: str="./test.png"):
         """
         Perform classification on an image using Detectron2.
-        """
+        """    
+        p = InferenceBase(self.feature_cfg,thresh_hold=0.5)
+        print(self.feature_cfg.MODEL.WEIGHTS,self.feature_cfg.TASK_TYPE)
+        # img = p.read_image(image_path)
         
-        model = TorchModelFactory.create_feature_extract_model("resnet")
-
+        img = Image.open(image_path).convert('RGB')
+        outputs,vis_output = p.run_on_image(img)
+        if vis_output is not None:
+            p.save_vis_image(vis_output)
+       
+        return outputs
     
-        input_batch = self.image_processor(image_path)
-
-        with torch.no_grad():
-            output = model(input_batch)
-            
-        result = {"features":output}
-        # print(result)
-        return result
-    
-    def classify(self, image_path: str="./test.png"):
+    def classify(self, image_path: str="./cat.jpg"):
         """
         Perform classification on an image using Detectron2.
         """
-        model = TorchModelFactory.create_feature_extract_model("resnet")
 
-        input_batch = self.image_processor(image_path)
-
-        with torch.no_grad():
-            output = model(input_batch)
+        p = InferenceBase(self.classification_cfg,thresh_hold=0.5)
+        print(self.classification_cfg.MODEL.WEIGHTS,self.classification_cfg.TASK_TYPE)
+        # img = p.read_image(image_path)
         
-        probabilities = torch.nn.functional.softmax(output[0], dim=0)
-        # print(probabilities,probabilities.shape)
-        top5_prob, top5_catid = torch.topk(probabilities, 1)
-        # print(top5_prob,top5_catid)
-        result = {"features":output,"pred_classes":top5_catid,"scores":top5_prob}
-        return result
+        img = Image.open(image_path).convert('RGB')
+        outputs,vis_output = p.run_on_image(img)
+        if vis_output is not None:
+            p.save_vis_image(vis_output)
+       
+        return outputs
+        
     
     def onstep_detect(self, image_path: str= "./test.png", confidence_threshold: float = 0.5):
         """
@@ -187,28 +203,15 @@ class ModelFactory:
         """
         Perform instance segmentation on an image using Detectron2.
         """
-        model = TorchModelFactory.create_semantic_model("deeplabv3")
-        input_batch = self.image_processor(image_path,resize=None,crop=None)
-
-        with torch.no_grad():
-            output = model(input_batch)["out"][0]
-        print("output shape",output.shape)
-        output_predictions = output.argmax(0)
-        print(output_predictions)
-        print("output_predictions shape",output_predictions.shape)
-
-        from detectron2.data.detection_utils import read_image
-        import uuid
-        image = read_image(image_path)
-        voc_train_metadata = self.prepare_meta("voc")
-        print(voc_train_metadata)
-        visualizer = Visualizer(image,metadata=voc_train_metadata)
-
-        visimage = visualizer.draw_sem_seg(output_predictions)                    
-        unique_id = uuid.uuid1()
-        visualized_image = visimage.get_image()[:, :, ::-1]
-        cv2.imwrite("./"+str(unique_id)+".png", visualized_image)
-        return output_predictions
+    
+        p = InferenceBase(self.semantic_segment_cfg,thresh_hold=0.5)
+        print(self.semantic_segment_cfg.DATASETS.TEST[0])
+        # img = p.read_image(image_path)
+        img = Image.open(image_path).convert('RGB')
+        outputs,vis_output = p.run_on_image(img)
+        if vis_output is not None:
+            p.save_vis_image(vis_output)
+        return outputs
     
     def panoptic_segment(self, image_path: str="./test.png"):
         """
@@ -238,7 +241,8 @@ class ModelFactory:
         
 if __name__ == "__main__":
     f = ModelFactory()
-    f.prepare_meta()
-    # f.classify()
+    # f.prepare_meta()
+    out = f.detect()
+    print(out)
 
     

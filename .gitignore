@@ -4,3 +4,4 @@ neo_albert_model/*
 alber_infence.csv
 ./*.pth
 *.bin
+.vscode/

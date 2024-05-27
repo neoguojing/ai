@@ -326,6 +326,7 @@ class DefaultPredictor:
         
             predictions = self.model([inputs])[0]
             return predictions
+    
         
     def release(self):
         import gc

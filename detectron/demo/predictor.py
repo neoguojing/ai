@@ -6,6 +6,7 @@ from collections import deque
 import cv2
 import torch
 import sys
+import numpy as np
 sys.path.append("..")
 
 from detectron2.config import get_cfg
@@ -14,7 +15,8 @@ from detectron2.engine.defaults import DefaultPredictor
 from detectron2.utils.video_visualizer import VideoVisualizer
 from detectron2.utils.visualizer import ColorMode, Visualizer
 from detectron2 import model_zoo
-
+from pytorch_predictor import PytorchPredictor
+from detectron2.data.detection_utils import convert_PIL_to_numpy
 
 class InferenceBase:
     def __init__(self, cfg, instance_mode=ColorMode.IMAGE, parallel=False,device="cpu",thresh_hold=0.5):
@@ -35,22 +37,28 @@ class InferenceBase:
         self.cfg.MODEL.DEVICE = device
 
         self.parallel = parallel
-        if parallel:
-            num_gpu = torch.cuda.device_count()
-            self.predictor = AsyncPredictor(cfg, num_gpus=num_gpu)
-        else:
-            self.predictor = DefaultPredictor(cfg)
+
+        if cfg.MODEL.WEIGHTS is not None:
+            if parallel:
+                num_gpu = torch.cuda.device_count()
+                self.predictor = AsyncPredictor(cfg, num_gpus=num_gpu)
+            else:
+                self.predictor = DefaultPredictor(cfg)
+        elif cfg.TASK_TYPE is not None:
+            print("---------------------------")
+            self.predictor = PytorchPredictor(cfg)
 
         self.output_dir = "./"
         self.thresh_hold = thresh_hold
 
         
 
-    def save_vis_image(self,visimage):
+    def save_vis_image(self,visimages):
         import uuid
-        unique_id = uuid.uuid1()
-        visualized_image = visimage.get_image()[:, :, ::-1]
-        cv2.imwrite(self.output_dir+str(unique_id)+".png", visualized_image)
+        for visimage in visimages:
+            unique_id = uuid.uuid1()
+            visualized_image = visimage.get_image()[:, :, ::-1]
+            cv2.imwrite(self.output_dir+str(unique_id)+".png", visualized_image)
 
     def read_image(self,image_path):
         """
@@ -63,9 +71,10 @@ class InferenceBase:
         return read_image(image_path)
 
     def filter_outputs(self, outputs):
-        instances = outputs["instances"]
-        if instances is None:
+        if "instances" not in outputs:
             return outputs
+        
+        instances = outputs["instances"]
         # 获取每个实例的分数
         scores = instances.scores
 
@@ -91,7 +100,7 @@ class InferenceBase:
                 labels = [class_names[i] for i in classes]
         return labels
 
-    def run_on_image(self, image):
+    def run_on_image(self,image):
         """
         Args:
             image (np.ndarray): an image of shape (H, W, C) (in BGR order).
@@ -99,12 +108,15 @@ class InferenceBase:
 
         Returns:
             predictions (dict): the output of the model.
-            vis_output (VisImage): the visualized image output.
+            vis_outputs ([VisImage]): the visualized image output.
         """
-        vis_output = None
+        vis_outputs = []
         predictions = self.predictor(image)
         predictions = self.filter_outputs(predictions)
         # Convert image from OpenCV BGR format to Matplotlib RGB format.
+        if not isinstance(image,np.ndarray):
+            image = convert_PIL_to_numpy(image,format=None)
+
         image = image[:, :, ::-1]
         visualizer = Visualizer(image, self.metadata, instance_mode=self.instance_mode)
         if "panoptic_seg" in predictions:
@@ -112,16 +124,25 @@ class InferenceBase:
             vis_output = visualizer.draw_panoptic_seg_predictions(
                 panoptic_seg.to(self.cpu_device), segments_info
             )
+            vis_outputs.append(vis_output)
         else:
             if "sem_seg" in predictions:
                 vis_output = visualizer.draw_sem_seg(
                     predictions["sem_seg"].argmax(dim=0).to(self.cpu_device)
                 )
+                vis_outputs.append(vis_output)
             if "instances" in predictions:
                 instances = predictions["instances"].to(self.cpu_device)
                 vis_output = visualizer.draw_instance_predictions(predictions=instances)
+                vis_outputs.append(vis_output)
+            if "sem_segs" in predictions:
+                for prediction in predictions["sem_segs"]:
+                    vis_output = visualizer.draw_sem_seg(
+                        prediction
+                    )
+                vis_outputs.append(vis_output)
 
-        return predictions, vis_output
+        return predictions, vis_outputs
 
     def _frame_from_video(self, video):
         while video.isOpened():

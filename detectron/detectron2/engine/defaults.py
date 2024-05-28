@@ -17,6 +17,7 @@ import weakref
 from collections import OrderedDict
 from typing import Optional
 import torch
+import numpy as np
 from fvcore.nn.precise_bn import get_bn_modules
 from omegaconf import OmegaConf
 from torch.nn.parallel import DistributedDataParallel
@@ -43,6 +44,7 @@ from detectron2.utils.env import seed_all_rng
 from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
+from detectron2.data.detection_utils import convert_PIL_to_numpy
 
 from . import hooks
 from .train_loop import AMPTrainer, SimpleTrainer, TrainerBase
@@ -298,7 +300,7 @@ class DefaultPredictor:
     def __call__(self, original_image):
         """
         Args:
-            original_image (np.ndarray): an image of shape (H, W, C) (in BGR order).
+            original_image (np.ndarray or PIL image): an image of shape (H, W, C) (in BGR order).
 
         Returns:
             predictions (dict):
@@ -308,6 +310,9 @@ class DefaultPredictor:
 
         if self.model is None:
             return None
+        
+        if not isinstance(original_image,np.ndarray):
+            original_image = convert_PIL_to_numpy(original_image,format=None)
         
         with torch.no_grad():  # https://github.com/sphinx-doc/sphinx/issues/4258
             # Apply pre-processing to image.

@@ -51,15 +51,6 @@ class InferenceBase:
         self.output_dir = "./"
         self.thresh_hold = thresh_hold
 
-        
-
-    def save_vis_image(self,visimages):
-        import uuid
-        for visimage in visimages:
-            unique_id = uuid.uuid1()
-            visualized_image = visimage.get_image()[:, :, ::-1]
-            cv2.imwrite(self.output_dir+str(unique_id)+".png", visualized_image)
-
     def read_image(self,image_path):
         """
         Args:
@@ -103,7 +94,7 @@ class InferenceBase:
     def run_on_image(self,image):
         """
         Args:
-            image (np.ndarray): an image of shape (H, W, C) (in BGR order).
+            image (np.ndarray or pil image): an image of shape (H, W, C) (in BGR order).
                 This is the format used by OpenCV.
 
         Returns:

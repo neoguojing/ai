@@ -32,7 +32,7 @@ class PytorchPredictor:
     def __call__(self, image):
         """
         Args:
-            image (tensor): an image of shape (H, W, C) (in BGR order).
+            image (PIL image): an image of shape (H, W, C) (in BGR order).
 
         Returns:
             predictions (dict):

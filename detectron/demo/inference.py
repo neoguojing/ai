@@ -19,6 +19,7 @@ from model_factory import TorchModelFactory
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
+from detectron2.data.detection_utils import pil_image_handler
 
 # 定义模型类别的常量
 class ModelCategory:
@@ -101,48 +102,69 @@ class ModelFactory:
                                          model_path="COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml",
                                          cfg_path="../configs/COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml").get_cfg()
         
-        self.aug = T.ResizeShortestEdge(
-            [224, 224], 224
-        )
+        self.need_save_images = False
     
-    def image_processor(self,image_path,resize=256,crop=224):
-        from PIL import Image
-        input_image = Image.open(image_path).convert('RGB')
-        preprocess = transforms.Compose([
-            transforms.Resize(resize) if resize is not None else lambda x: x,
-            transforms.CenterCrop(crop) if crop is not None else lambda x: x,
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
-        input_tensor = preprocess(input_image)
-        input_batch = input_tensor.unsqueeze(0)
-        return input_batch
+    def predict(self,pil_image,task_type="panoptic"):
+        result = None
+        vis_output = None
+        if task_type == "panoptic":
+            result,vis_output = self.panoptic_segment(input_image=pil_image)
+        elif task_type == "detect":
+            result,vis_output = self.detect(input_image=pil_image)
+        elif task_type == "classification":
+            result,vis_output = self.classify(input_image=pil_image)
+        elif task_type == "instance":
+            result,vis_output = self.instance_segment(input_image=pil_image)
+        elif task_type == "semantic":
+            result,vis_output = self.semantic_segment(input_image=pil_image)
+        elif task_type == "feature":
+            result,vis_output = self.extract(input_image=pil_image)
+        elif task_type == "keypoint":
+            result,vis_output = self.keypoint(input_image=pil_image)
+        elif task_type == "onestep_detect":
+            result,vis_output = self.onstep_detect(input_image=pil_image)
 
-    def prepare_meta(self,dataset="voc"):
-        print("--------------",self.semantic_segment_cfg.MODEL.WEIGHTS,self.semantic_segment_cfg.DATASETS.TEST)
-        meta = None
-        if dataset == "voc":
-            meta = MetadataCatalog.get("voc_2007_test")
-            meta.stuff_classes = meta.thing_classes
-            meta.stuff_classes.insert(0, "background")
+        pil_images = []
+        if vis_output is not None:
+            if self.need_save_images:
+                self.save_vis_image(vis_output)
+            
 
-        return meta
-    def extract(self, image_path: str="./test.png"):
+            pil_images = self.visimage_to_pil(vis_output)
+        
+        return result,pil_images
+
+    def save_vis_image(self,visimages):
+        import uuid
+        for visimage in visimages:
+            unique_id = uuid.uuid1()
+            visualized_image = visimage.get_image()[:, :, ::-1]
+            cv2.imwrite(self.output_dir+str(unique_id)+".png", visualized_image)
+
+    def visimage_to_pil(self,visimages):
+        pil_images = []
+        for visimage in visimages:
+            visualized_image = visimage.get_image()[:, :, ::-1]
+            pil_image = Image.fromarray(visualized_image)
+            pil_images.append(pil_image)
+        return pil_images
+
+
+    def extract(self, input_image=None,image_path: str="./test.png"):
         """
         Perform classification on an image using Detectron2.
         """    
         p = InferenceBase(self.feature_cfg,thresh_hold=0.5)
         print(self.feature_cfg.MODEL.WEIGHTS,self.feature_cfg.TASK_TYPE)
         # img = p.read_image(image_path)
-        
-        img = Image.open(image_path).convert('RGB')
-        outputs,vis_output = p.run_on_image(img)
-        if vis_output is not None:
-            p.save_vis_image(vis_output)
+        if input_image is None and image_path is not None:
+            input_image = Image.open(image_path).convert('RGB')
+            input_image = pil_image_handler(input_image)
+        outputs,_ = p.run_on_image(input_image)
        
         return outputs
     
-    def classify(self, image_path: str="./cat.jpg"):
+    def classify(self, input_image=None,image_path: str="./cat.jpg"):
         """
         Perform classification on an image using Detectron2.
         """
@@ -150,56 +172,57 @@ class ModelFactory:
         p = InferenceBase(self.classification_cfg,thresh_hold=0.5)
         print(self.classification_cfg.MODEL.WEIGHTS,self.classification_cfg.TASK_TYPE)
         # img = p.read_image(image_path)
+        if input_image is None and image_path is not None:
+            input_image = Image.open(image_path).convert('RGB')
+            input_image = pil_image_handler(input_image)
+        outputs,_ = p.run_on_image(input_image)
         
-        img = Image.open(image_path).convert('RGB')
-        outputs,vis_output = p.run_on_image(img)
-        if vis_output is not None:
-            p.save_vis_image(vis_output)
-       
         return outputs
         
     
-    def onstep_detect(self, image_path: str= "./test.png", confidence_threshold: float = 0.5):
+    def onstep_detect(self, input_image=None,image_path: str= "./test.png", confidence_threshold: float = 0.5):
         """
         Perform on step object detection on an image using Detectron2.
         """
         p = InferenceBase(self.onstep_detection_cfg,thresh_hold=confidence_threshold)
         print(self.onstep_detection_cfg)
-        img = p.read_image(image_path)
-        outputs,vis_output = p.run_on_image(img)
-        if vis_output is not None:
-            p.save_vis_image(vis_output)
-       
-        return outputs
+
+        if input_image is None and image_path is not None:
+            input_image = p.read_image(image_path)
+        else:
+            input_image = pil_image_handler(input_image)
+        outputs,vis_output = p.run_on_image(input_image)
+        
+        return outputs,vis_output
     
-    def detect(self, image_path: str = "./test.png", confidence_threshold: float = 0.5):
+    def detect(self,input_image=None, image_path: str = "./test.png", confidence_threshold: float = 0.5):
         """
         Perform object detection on an image using Detectron2.
         """
         p = InferenceBase(self.detection_cfg,thresh_hold=confidence_threshold)
         print(self.detection_cfg)
-        img = p.read_image(image_path)
-        outputs,vis_output = p.run_on_image(img)
-        if vis_output is not None:
-            p.save_vis_image(vis_output)
-        print(outputs)
-       
-        return outputs
+        if input_image is None and image_path is not None:
+            input_image = p.read_image(image_path)
+        else:
+            input_image = pil_image_handler(input_image)
+        outputs,vis_output = p.run_on_image(input_image)
+
+        return outputs,vis_output
     
-    def instance_segment(self, image_path: str="./test.png"):
+    def instance_segment(self,input_image=None, image_path: str="./test.png"):
         """
         Perform instance segmentation on an image using Detectron2.
         """
         p = InferenceBase(self.instance_segment_cfg)
-        img = p.read_image(image_path)
-        outputs,vis_output = p.run_on_image(img)
-        if vis_output is not None:
-            p.save_vis_image(vis_output)
-        print(outputs)
-       
-        return outputs
+        if input_image is None and image_path is not None:
+            input_image = p.read_image(image_path)
+        else:
+            input_image = pil_image_handler(input_image)
+        outputs,vis_output = p.run_on_image(input_image)
+
+        return outputs,vis_output
         
-    def semantic_segment(self, image_path: str="./test.png"):
+    def semantic_segment(self,input_image=None, image_path: str="./test.png"):
         """
         Perform instance segmentation on an image using Detectron2.
         """
@@ -207,37 +230,41 @@ class ModelFactory:
         p = InferenceBase(self.semantic_segment_cfg,thresh_hold=0.5)
         print(self.semantic_segment_cfg.DATASETS.TEST[0])
         # img = p.read_image(image_path)
-        img = Image.open(image_path).convert('RGB')
-        outputs,vis_output = p.run_on_image(img)
-        if vis_output is not None:
-            p.save_vis_image(vis_output)
-        return outputs
+        if input_image is None and image_path is not None:
+            input_image = Image.open(image_path).convert('RGB')
+            input_image = pil_image_handler(input_image)
+        outputs,vis_output = p.run_on_image(input_image)
+
+        return outputs,vis_output
     
-    def panoptic_segment(self, image_path: str="./test.png"):
+    def panoptic_segment(self,input_image=None, image_path: str="./test.png"):
         """
         Perform panoptic segmentation on an image using Detectron2.
         """
         p = InferenceBase(self.panoptic_segment_cfg)
-        img = p.read_image(image_path)
-        outputs,vis_output = p.run_on_image(img)
-        if vis_output is not None:
-            p.save_vis_image(vis_output)
-        print(outputs)
-        return outputs
+        if input_image is None and image_path is not None:
+            input_image = p.read_image(image_path)
+        else:
+            input_image = pil_image_handler(input_image)
+        outputs,vis_output = p.run_on_image(input_image)
+
+        return outputs,vis_output
         
-    def keypoint(self, image_path: str="./test.png"):
+    def keypoint(self, input_image=None,image_path: str="./test.png"):
         """
         Perform keypoint on an image using Detectron2.
         """
         p = InferenceBase(self.keypoints_cfg)
         print(self.detection_cfg)
-        img = p.read_image(image_path)
-        outputs,vis_output = p.run_on_image(img)
-        if vis_output is not None:
-            p.save_vis_image(vis_output)
-        print(outputs)
-       
-        return outputs
+
+        if input_image is None and image_path is not None:
+            input_image = p.read_image(image_path)
+        else:
+            input_image = pil_image_handler(input_image)
+
+        outputs,vis_output = p.run_on_image(input_image)
+
+        return outputs,vis_output
         
 if __name__ == "__main__":
     f = ModelFactory()

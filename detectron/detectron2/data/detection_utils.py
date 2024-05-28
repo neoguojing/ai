@@ -162,6 +162,9 @@ def _apply_exif_orientation(image):
         return image.transpose(method)
     return image
 
+def pil_image_handler(image):
+    return _apply_exif_orientation(image)
+
 
 def read_image(file_name, format=None):
     """

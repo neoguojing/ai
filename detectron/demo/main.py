@@ -64,7 +64,8 @@ def create_ui():
 def create_event_handlers():
     components["image_input"].upload(
         update_input_image, components['image_input'], None).then(
-        do_refernce,None,[components["result_output"],components["image_output"]]
+        # do_refernce,None,[components["result_output"],components["image_output"]]
+            do_refernce,None,[components["image_output"]]
         )
     
     components["algo_type"].change(
@@ -91,7 +92,8 @@ def do_refernce():
     output,output_image = factory.predict(pil_image=input_image,task_type=algo_type)
     print(output)
     print(output_image)
-    return output,output_image[0]
+    # return output,output_image[0]
+    return output_image[0]
 
 if __name__ == "__main__":
     demo = create_ui()

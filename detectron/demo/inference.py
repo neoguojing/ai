@@ -248,6 +248,7 @@ class ModelFactory:
             input_image = pil_image_handler(input_image)
         outputs,vis_output = p.run_on_image(input_image)
 
+        # outputs['sem_seg'] = outputs['sem_seg'].numpy().tolist()
         return outputs,vis_output
         
     def keypoint(self, input_image=None,image_path: str="./test.png"):
@@ -266,10 +267,10 @@ class ModelFactory:
 
         return outputs,vis_output
         
-if __name__ == "__main__":
-    f = ModelFactory()
-    # f.prepare_meta()
-    out = f.detect()
-    print(out)
+# if __name__ == "__main__":
+#     f = ModelFactory()
+#     # f.prepare_meta()
+#     out = f.detect()
+#     print(out)
 
     

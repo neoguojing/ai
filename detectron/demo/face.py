@@ -38,6 +38,13 @@ class FaceAlgo:
         'euclidean_l2',
     ]
 
+    def np_to_pil(self,np_img):
+        # 转换 BGR 到 RGB
+        rgb_image = np_img[:, :, ::-1]
+        #convert numpy array to PIL Image
+        return Image.fromarray(rgb_image)
+
+
     def predict(self,pil_image,pil_image1=None,algo_type="detect"):
         image = pil_image_to_numpy(pil_image)
         if pil_image1 is not None:
@@ -99,7 +106,13 @@ class FaceAlgo:
             detector_backend = self.backends[4],
         )
 
-        return face_objs
+        ret = []
+        for i,obj in face_objs:
+            face_image = self.np_to_pil(obj['face'])
+            face_image.save(f"{i}.jpg")
+            item = {'facial_area':obj['facial_area'],'confidence':obj['confidence']}
+            ret.append(item)
+        return ret
 
 if __name__ == "__main__":
     from PIL import Image

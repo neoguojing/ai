@@ -165,6 +165,10 @@ def _apply_exif_orientation(image):
 def pil_image_handler(image):
     return _apply_exif_orientation(image)
 
+def pil_image_to_numpy(image,format="BGR"):
+    image = _apply_exif_orientation(image)
+    return convert_PIL_to_numpy(image, format)
+
 
 def read_image(file_name, format=None):
     """

@@ -14,15 +14,16 @@ from inference import ModelFactory
 components = {}
 
 params = {
-    "algo_type": "全景分割",
+    "algo_type": None,
     "input_image":None
 }
+
 
 def gradio(*keys):
     if len(keys) == 1 and type(keys[0]) in [list, tuple]:
         keys = keys[0]
 
-    return [params[k] for k in keys]
+    return [components[k] for k in keys]
 
 
 algo_map = {
@@ -39,10 +40,13 @@ algo_map = {
 def create_ui():
     with gr.Blocks() as demo:
         with gr.Row():
-            components["algo_type"] = gr.Dropdown(
-                            ["目标检测","单阶段目标检测", "分类", "特征提取","语义分割","实例分割","关键点检测","全景分割"],value="全景分割",
-                            label="算法类别",interactive=True
+            with gr.Column(scale=2):
+                components["algo_type"] = gr.Dropdown(
+                                ["目标检测","单阶段目标检测", "分类", "特征提取","语义分割","实例分割","关键点检测","全景分割"],value="全景分割",
+                                label="算法类别",interactive=True
                         )
+            with gr.Column(scale=2):
+                components["submit_btn"] = gr.Button(value="解析")
         with gr.Row():
             with gr.Column(scale=2):
                 with gr.Row(elem_id='audio-container'):
@@ -56,44 +60,44 @@ def create_ui():
         with gr.Row():
             with gr.Group():
                 components["result_output"] = gr.JSON(label="推理结果")
+                
 
         create_event_handlers()
     return demo
 
 
 def create_event_handlers():
+    params["algo_type"] = gr.State("全景分割")
+    params["input_image"] = gr.State()
+    
+
     components["image_input"].upload(
-        update_input_image, components['image_input'], None).then(
-        # do_refernce,None,[components["result_output"],components["image_output"]]
-            do_refernce,None,[components["image_output"]]
-        )
+        lambda x: x, gradio('image_input'), params["input_image"]
+    )
     
     components["algo_type"].change(
-        update_algo_type, components['algo_type'],None
+        lambda x: x, gradio('algo_type'), params["algo_type"]
     )
 
-def update_algo_type(input):
-    params["algo_type"] = input
-    print(params["algo_type"])
-    return input
+    components["submit_btn"].click(
+        do_refernce,gradio('algo_type','image_input'),gradio("result_output",'image_output')
+    )
 
-def update_input_image(input):
-    params["input_image"] = input
-    print(params["input_image"])
-    return input
+def do_refernce(algo_type,input_image):
+# def do_refernce():
+    print("input image",input_image)
+    print(algo_type)
 
-# def do_refernce(algo_type,input_image):
-def do_refernce():
-    print(params["input_image"])
-    print(params["algo_type"])
-    input_image = params["input_image"]
-    algo_type = algo_map[params["algo_type"]]
+    if input_image is None:
+        gr.Warning('请上传图片')
+        return None
+    algo_type = algo_map[algo_type]
     factory = ModelFactory()
     output,output_image = factory.predict(pil_image=input_image,task_type=algo_type)
-    print(output)
-    print(output_image)
-    # return output,output_image[0]
-    return output_image[0]
+    if len(output_image) == 0:
+        return output,None
+    print("output image",output_image[0])
+    return output,output_image[0]
 
 if __name__ == "__main__":
     demo = create_ui()

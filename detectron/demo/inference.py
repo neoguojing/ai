@@ -104,6 +104,53 @@ class ModelFactory:
         
         self.need_save_images = False
     
+    def serialize(self,output):
+        serialized = None
+        # print(output)
+        if "instances" in output:
+            serialized = {
+                'image_height': output["instances"].image_size[0],
+                'image_width': output["instances"].image_size[1],
+                'pred_boxes': output["instances"].pred_boxes.tensor.tolist(),
+                'scores': output["instances"].scores.tolist(),
+                'pred_classes': output["instances"].pred_classes.tolist()
+            }
+
+            if hasattr(output["instances"],"pred_masks"):
+                # serialized["pred_masks"] = output["instances"].pred_masks.tolist()
+                print("instances.pred_masks",output["instances"].pred_masks.shape)
+            if hasattr(output["instances"],"pred_keypoints"):
+                serialized["pred_keypoints"] = output["instances"].pred_keypoints.tolist()
+        if "sem_seg" in output:
+            # serialized["sem_seg"] = output["sem_seg"].tolist()
+            print("sem_seg:",output["sem_seg"].shape)
+        
+        if "panoptic_seg" in output:
+            print("panoptic_seg:",output["panoptic_seg"][0].shape)
+            # print("panoptic_seg:",output["panoptic_seg"])
+            serialized["panoptic_seg"] = output["panoptic_seg"][1]
+        if "sem_segs" in output:
+            print("sem_segs:",output["sem_segs"].shape)
+        
+        if "classfication" in output:
+            serialized = []
+            for item in output["classfication"]:
+                print("classfication:",item["feature"].shape)
+                row = {
+                    # "feature": item["feature"].tolist(),
+                    "score": item["score"].tolist(),
+                    "pred_class": item["pred_class"].tolist(),
+                }
+                serialized.append(row)
+
+        if "features" in output:
+            print("features:",output["features"].shape)
+            serialized = {
+                "features":output["features"].tolist(),
+            }
+
+        return serialized
+    
     def predict(self,pil_image,task_type="panoptic"):
         result = None
         vis_output = None
@@ -112,13 +159,13 @@ class ModelFactory:
         elif task_type == "detect":
             result,vis_output = self.detect(input_image=pil_image)
         elif task_type == "classification":
-            result,vis_output = self.classify(input_image=pil_image)
+            result = self.classify(input_image=pil_image)
         elif task_type == "instance":
             result,vis_output = self.instance_segment(input_image=pil_image)
         elif task_type == "semantic":
             result,vis_output = self.semantic_segment(input_image=pil_image)
         elif task_type == "feature":
-            result,vis_output = self.extract(input_image=pil_image)
+            result = self.extract(input_image=pil_image)
         elif task_type == "keypoint":
             result,vis_output = self.keypoint(input_image=pil_image)
         elif task_type == "onestep_detect":
@@ -129,10 +176,9 @@ class ModelFactory:
             if self.need_save_images:
                 self.save_vis_image(vis_output)
             
-
             pil_images = self.visimage_to_pil(vis_output)
         
-        return result,pil_images
+        return self.serialize(result),pil_images
 
     def save_vis_image(self,visimages):
         import uuid

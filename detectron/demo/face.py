@@ -2,10 +2,15 @@ import sys
 sys.path.append("..")
 from deepface import DeepFace
 from detectron2.data.detection_utils import pil_image_to_numpy
+import numpy as np
+import time
 
+from PIL import Image
 
 class FaceAlgo:
     
+    need_save_image = False
+
     backends = [
     'opencv', 
     'ssd', 
@@ -38,11 +43,16 @@ class FaceAlgo:
         'euclidean_l2',
     ]
 
+    def __init__(self,need_save_image=False):
+        self.need_save_image = need_save_image
+
     def np_to_pil(self,np_img):
         # 转换 BGR 到 RGB
-        rgb_image = np_img[:, :, ::-1]
+        # rgb_image = np_img[:, :, ::-1]
+        np_img = (np_img * 255).astype(np.uint8)
+        # print(rgb_image.shape)
         #convert numpy array to PIL Image
-        return Image.fromarray(rgb_image)
+        return Image.fromarray(np_img)
 
 
     def predict(self,pil_image,pil_image1=None,algo_type="detect"):
@@ -107,17 +117,23 @@ class FaceAlgo:
         )
 
         ret = []
-        for i,obj in face_objs:
+        faces = []
+        # 获取当前时间戳
+        current_timestamp = time.time()
+        for i,obj in enumerate(face_objs):
+            print(obj['face'])
             face_image = self.np_to_pil(obj['face'])
-            face_image.save(f"{i}.jpg")
+            if self.need_save_image:
+                face_image.save(f"{current_timestamp}_{i}.png")
             item = {'facial_area':obj['facial_area'],'confidence':obj['confidence']}
             ret.append(item)
-        return ret
+            faces.append(face_image)
+        return ret,faces
 
-if __name__ == "__main__":
-    from PIL import Image
-    m = FaceAlgo()  # pragma: no cover
+# if __name__ == "__main__":
+    
+#     m = FaceAlgo()  # pragma: no cover
 
-    image = Image.open("./face.jpg")
-    out = m.predict(image)
-    print(out)
+#     image = Image.open("./face1.jpeg")
+#     out = m.predict(image)
+#     print(out)

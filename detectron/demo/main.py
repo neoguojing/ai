@@ -10,6 +10,7 @@ import sys
 sys.path.append("..")
 
 from inference import ModelFactory
+from face import FaceAlgo
 
 components = {}
 
@@ -81,13 +82,13 @@ def create_ui():
                     components["face_submit_btn"] = gr.Button(value="解析")
             with gr.Row():
                 with gr.Column(scale=2):
-                    with gr.Row(elem_id='audio-container'):
+                    with gr.Row(elem_id=''):
                         with gr.Group():
                             components["face_input"] = gr.Image(type="pil",elem_id='face-input',label='输入')
                 with gr.Column(scale=2):
                     with gr.Row():
                         with gr.Group():
-                            components["face_image_output"] = gr.Image(type="pil",elem_id='face-output',label='输出',interactive=False)
+                            components["face_image_output"] = gr.Gallery(elem_id='face_image_output',label='输出',columns=5,interactive=False)
 
             with gr.Row():
                 with gr.Group():
@@ -116,8 +117,12 @@ def create_event_handlers():
         do_refernce,gradio('algo_type','image_input'),gradio("result_output",'image_output')
     )
 
+    components["face_type"].change(
+        ui_by_facetype, gradio('face_type'), params["face_type"]
+    )
+
     components["face_submit_btn"].click(
-        do_refernce,gradio('face_type','face_input'),gradio("face_output",'face_image_output')
+        do_face_refernce,gradio('face_type','face_input'),gradio("face_output",'face_image_output')
     )
 
 def do_refernce(algo_type,input_image):
@@ -136,7 +141,13 @@ def do_refernce(algo_type,input_image):
     print("output image",output_image[0])
     return output,output_image[0]
 
-def do_face_refernce(algo_type,input_image):
+def ui_by_facetype(face_type):
+    if face_type == "人脸比对":
+    else:
+        components["face_image_output"].update()
+
+
+def do_face_refernce(algo_type,input_image,input_image1):
 # def do_refernce():
     print("input image",input_image)
     print(algo_type)
@@ -145,7 +156,10 @@ def do_face_refernce(algo_type,input_image):
         gr.Warning('请上传图片')
         return None
     algo_type = face_algo_map[algo_type]
-
+    m = FaceAlgo()  # pragma: no cover
+    out,faces = m.predict(pil_image=input_image,pil_image1=input_image1,algo_type=algo_type)
+    # TODO 防止人脸过多的处理
+    return out,faces
 
 if __name__ == "__main__":
     demo = create_ui()

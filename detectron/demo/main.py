@@ -89,6 +89,7 @@ def create_ui():
                     with gr.Row():
                         with gr.Group():
                             components["face_image_output"] = gr.Gallery(elem_id='face_image_output',label='输出',columns=5,interactive=False)
+                            components["face_input1"] = gr.Image(type="pil",elem_id='face-input1',label='输入1',visible=False)
 
             with gr.Row():
                 with gr.Group():
@@ -103,6 +104,7 @@ def create_ui():
 def create_event_handlers():
     params["algo_type"] = gr.State("全景分割")
     params["input_image"] = gr.State()
+    params["face_type"] = gr.State("人脸检测")
     
 
     components["image_input"].upload(
@@ -122,7 +124,7 @@ def create_event_handlers():
     )
 
     components["face_submit_btn"].click(
-        do_face_refernce,gradio('face_type','face_input'),gradio("face_output",'face_image_output')
+        do_face_refernce,gradio('face_type','face_input','face_input1'),gradio("face_output",'face_image_output')
     )
 
 def do_refernce(algo_type,input_image):
@@ -142,9 +144,13 @@ def do_refernce(algo_type,input_image):
     return output,output_image[0]
 
 def ui_by_facetype(face_type):
+    print("ui_by_facetype",face_type)
     if face_type == "人脸比对":
+        components["face_image_output"].update(visible=False)
+        components["face_input1"].update(visible=True)
     else:
-        components["face_image_output"].update()
+        components["face_image_output"].update(visible=True)
+        components["face_input1"].update(visible=False)
 
 
 def do_face_refernce(algo_type,input_image,input_image1):
@@ -155,11 +161,15 @@ def do_face_refernce(algo_type,input_image,input_image1):
     if input_image is None:
         gr.Warning('请上传图片')
         return None
+    
     algo_type = face_algo_map[algo_type]
     m = FaceAlgo()  # pragma: no cover
     out,faces = m.predict(pil_image=input_image,pil_image1=input_image1,algo_type=algo_type)
-    # TODO 防止人脸过多的处理
-    return out,faces
+    if algo_type == "compare":
+        return out,None
+    else:
+        # TODO 防止人脸过多的处理
+        return out,faces
 
 if __name__ == "__main__":
     demo = create_ui()

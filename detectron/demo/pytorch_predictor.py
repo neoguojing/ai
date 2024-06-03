@@ -1,5 +1,5 @@
 
-from model_factory import TorchModelFactory
+from pytorch_model_factory import TorchModelFactory
 from detectron2.data import MetadataCatalog
 import torch
 import torchvision.transforms as transforms
@@ -26,8 +26,6 @@ class PytorchPredictor:
             print(self.metadata)
             self.resize = None
             self.crop = None
-        elif self.task_type == "detect":
-            self.model = TorchModelFactory.create_detect_model("Yolo")
 
     def __call__(self, image):
         """
@@ -87,7 +85,7 @@ class PytorchPredictor:
             output_predictions = output.argmax(1)
             output_predictions = output_predictions.cpu()
             result = {"sem_segs":output_predictions}
-        elif self.task_type == "detect":
+        elif self.task_type == "yolo":
             pass
     
         return result
@@ -101,3 +99,4 @@ class PytorchPredictor:
             torch.cuda.empty_cache()
         # 手动触发垃圾回收
         gc.collect()
+

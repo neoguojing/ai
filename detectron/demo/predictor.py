@@ -39,12 +39,14 @@ class InferenceBase:
         self.parallel = parallel
 
         if cfg.MODEL.WEIGHTS is not None:
+            # 用于detection2 内置模型
             if parallel:
                 num_gpu = torch.cuda.device_count()
                 self.predictor = AsyncPredictor(cfg, num_gpus=num_gpu)
             else:
                 self.predictor = DefaultPredictor(cfg)
         elif cfg.TASK_TYPE is not None:
+            # 用于pytorch模型
             print("---------------------------")
             self.predictor = PytorchPredictor(cfg)
 
@@ -91,19 +93,8 @@ class InferenceBase:
                 labels = [class_names[i] for i in classes]
         return labels
 
-    def run_on_image(self,image):
-        """
-        Args:
-            image (np.ndarray or pil image): an image of shape (H, W, C) (in BGR order).
-                This is the format used by OpenCV.
-
-        Returns:
-            predictions (dict): the output of the model.
-            vis_outputs ([VisImage]): the visualized image output.
-        """
+    def plot(self,image,predictions):
         vis_outputs = []
-        predictions = self.predictor(image)
-        predictions = self.filter_outputs(predictions)
         # Convert image from OpenCV BGR format to Matplotlib RGB format.
         if not isinstance(image,np.ndarray):
             image = convert_PIL_to_numpy(image,format=None)
@@ -132,7 +123,23 @@ class InferenceBase:
                         prediction
                     )
                 vis_outputs.append(vis_output)
+        return vis_outputs
+    
+    def run_on_image(self,image):
+        """
+        Args:
+            image (np.ndarray or pil image): an image of shape (H, W, C) (in BGR order).
+                This is the format used by OpenCV.
 
+        Returns:
+            predictions (dict): the output of the model.
+            vis_outputs ([VisImage]): the visualized image output.
+        """
+        
+        predictions = self.predictor(image)
+        predictions = self.filter_outputs(predictions)
+        
+        vis_outputs = self.plot(image,predictions)
         return predictions, vis_outputs
 
     def _frame_from_video(self, video):
@@ -289,14 +296,14 @@ class AsyncPredictor:
     def default_buffer_size(self):
         return len(self.procs) * 5
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     
     
-    cfg = get_cfg()
-    cfg.merge_from_file("../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
-    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
-    p = InferenceBase(cfg)
-    img = p.read_image("./test.png")
-    output,image = p.run_on_image(img)
-    print(output)
+#     cfg = get_cfg()
+#     cfg.merge_from_file("../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
+#     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
+#     cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
+#     p = InferenceBase(cfg)
+#     img = p.read_image("./test.png")
+#     output,image = p.run_on_image(img)
+#     print(output)

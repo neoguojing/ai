@@ -2,7 +2,7 @@ import torch
 from PIL import Image
 import sys
 sys.path.insert(0, '')
-from model_factory import TorchModelFactory
+from model_factory import ModelFactory
 from tools import image_preprocessor,scale_bbox,label_to_class
 from dataset import coco_labels
 
@@ -10,7 +10,7 @@ from dataset import coco_labels
 def detect_with_model(image_path, model_name):
     
     # Get model
-    model = TorchModelFactory.create_detect_model(model_name)
+    model = ModelFactory.create_detect_model(model_name)
     # Preprocess image
     input_batch,_,_ = image_preprocessor(image_path)
     

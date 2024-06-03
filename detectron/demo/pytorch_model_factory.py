@@ -4,6 +4,7 @@ from torchvision.models import detection
 import torch
 import torchvision
 import torchvision.models.segmentation as segmentation
+from ultralytics import YOLO
 # import tensorrt
 # import tensorrt as trt
 # import onnx
@@ -25,7 +26,7 @@ class TorchModelFactory:
         'FasterRCNN': lambda: detection.fasterrcnn_resnet50_fpn(weights=detection.FasterRCNN_ResNet50_FPN_Weights.COCO_V1, 
                                                                 weights_backbone=models.ResNet50_Weights.IMAGENET1K_V1),
         'SSDLite': lambda: detection.ssd300_vgg16(weights=detection.SSD300_VGG16_Weights.COCO_V1),
-        'Yolo': lambda: torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+        'Yolo': lambda: YOLO("yolov8n.pt")
     }
 
     MODELS_CLASSIFICATION = {
@@ -61,6 +62,11 @@ class TorchModelFactory:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model = TorchModelFactory.MODELS_DETECT[model_name]().to(device)
         model.eval()
+        return model
+    
+    @staticmethod  
+    def create_yolo_detect_model():
+        model = TorchModelFactory.MODELS_DETECT["Yolo"]()
         return model
 
     @staticmethod

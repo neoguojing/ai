@@ -15,7 +15,6 @@ from detectron2.data import MetadataCatalog, DatasetCatalog
 from detectron2.utils.visualizer import ColorMode
 import detectron2.data.transforms as T
 from predictor import InferenceBase
-from model_factory import TorchModelFactory
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
@@ -40,6 +39,7 @@ class ModelCategory:
     GENERATIVE_MODELLING = "generative_modelling"
     CONTROL = "control"
     ROBOTICS = "robotics"
+    YOLO = "yolo"
     OTHERS = "others"
 
 class ModelConfig:
@@ -63,9 +63,9 @@ class ModelConfig:
         elif model_type == ModelCategory.SEMANTIC_SEGMENTATION:
             self.cfg.TASK_TYPE = "semantic"
             self.cfg.MODEL.WEIGHTS = None
-        # elif model_type == ModelCategory.OBJECT_DETECTION:
-        #     self.cfg.TASK_TYPE = "detect"
-        #     self.cfg.MODEL.WEIGHTS = None
+        elif model_type == ModelCategory.YOLO:
+            self.cfg.TASK_TYPE = "yolo"
+            self.cfg.MODEL.WEIGHTS = None
 
     def get_cfg(self,):
         return self.cfg
@@ -101,6 +101,9 @@ class ModelFactory:
         self.keypoints_cfg = ModelConfig(ModelCategory.KEYPOINTS, 
                                          model_path="COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml",
                                          cfg_path="../configs/COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml").get_cfg()
+        self.yolo_cfg = ModelConfig(ModelCategory.YOLO, 
+                                         model_path=None,
+                                         cfg_path=None).get_cfg()
         
         self.need_save_images = False
     
@@ -170,6 +173,8 @@ class ModelFactory:
             result,vis_output = self.keypoint(input_image=pil_image)
         elif task_type == "onestep_detect":
             result,vis_output = self.onstep_detect(input_image=pil_image)
+        elif task_type == "yolo":
+            result,vis_output = self.yolo(input_image=pil_image)
 
         pil_images = []
         if vis_output is not None:
@@ -312,11 +317,24 @@ class ModelFactory:
         outputs,vis_output = p.run_on_image(input_image)
 
         return outputs,vis_output
+    
+    def yolo(self, input_image=None,image_path: str="./test/test.png"):
+        p = InferenceBase(self.yolo_cfg,thresh_hold=0.5)
+        # print(self.yolo_cfg.DATASETS.TEST[0])
+        # img = p.read_image(image_path)
+        if input_image is None and image_path is not None:
+            input_image = Image.open(image_path).convert('RGB')
+            input_image = pil_image_handler(input_image)
+        outputs,vis_output = p.run_on_image(input_image)
+
+        return outputs,vis_output
+
         
-# if __name__ == "__main__":
-#     f = ModelFactory()
-#     # f.prepare_meta()
-#     out = f.detect()
-#     print(out)
+        
+if __name__ == "__main__":
+    f = ModelFactory()
+    # f.prepare_meta()
+    out = f.yolo()
+    print(out)
 
     

@@ -3,13 +3,13 @@ import numpy as np
 from PIL import Image
 import sys
 sys.path.insert(0, '')
-from  model_factory import TorchModelFactory
+from  model_factory import ModelFactory
 from tools import image_preprocessor,label_to_class,scale_bbox
 # from dataset import coco_labels
 
 # Define the factory function for instance segmentation using Mask R-CNN and YOLACT models with postprocessing
 def semantic_segmentation(image_path,model_name):
-    model = TorchModelFactory.create_semantic_model(model_name)
+    model = ModelFactory.create_semantic_model(model_name)
 
     input_batch,_,image_size = image_preprocessor(image_path)
     print("image shape",image_size)

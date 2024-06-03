@@ -9,7 +9,7 @@ import torchvision.models.segmentation as segmentation
 # import onnx
 # import onnxruntime as ort
 
-class TorchModelFactory:
+class ModelFactory:
     
     MODELS_FEATURE_EXTRACT = {
         'resnet': lambda: models.resnet101(weights=models.ResNet101_Weights.IMAGENET1K_V1),
@@ -47,48 +47,48 @@ class TorchModelFactory:
 
     @staticmethod    
     def create_feature_extract_model(model_name):
-        if model_name not in TorchModelFactory.MODELS_FEATURE_EXTRACT:
+        if model_name not in ModelFactory.MODELS_FEATURE_EXTRACT:
             raise ValueError('Invalid model name')
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = TorchModelFactory.MODELS_FEATURE_EXTRACT[model_name]().to(device)
+        model = ModelFactory.MODELS_FEATURE_EXTRACT[model_name]().to(device)
         model.eval()
         return model
     
     @staticmethod  
     def create_detect_model(model_name):
-        if model_name not in TorchModelFactory.MODELS_DETECT:
+        if model_name not in ModelFactory.MODELS_DETECT:
             raise ValueError('Invalid model name')
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = TorchModelFactory.MODELS_DETECT[model_name]().to(device)
+        model = ModelFactory.MODELS_DETECT[model_name]().to(device)
         model.eval()
         return model
 
     @staticmethod
     def create_classication_model(model_name):
-        if model_name not in TorchModelFactory.MODELS_CLASSIFICATION:
+        if model_name not in ModelFactory.MODELS_CLASSIFICATION:
             raise ValueError('Invalid model name')
         # Use GPU if available
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = TorchModelFactory.MODELS_CLASSIFICATION[model_name]().to(device)
+        model = ModelFactory.MODELS_CLASSIFICATION[model_name]().to(device)
         model.eval() # Set model to inference mode
         return model
 
     @staticmethod
     def create_instance_model(model_name):
-        if model_name not in TorchModelFactory.MODELS_INSTANCE:
+        if model_name not in ModelFactory.MODELS_INSTANCE:
             raise ValueError('Invalid model name')
         # Use GPU if available
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = TorchModelFactory.MODELS_INSTANCE[model_name]().to(device)
+        model = ModelFactory.MODELS_INSTANCE[model_name]().to(device)
         model.eval() # Set model to inference mode
         return model
 
     @staticmethod
     def create_semantic_model(model_name):
-        if model_name not in TorchModelFactory.MODELS_SEMANTIC:
+        if model_name not in ModelFactory.MODELS_SEMANTIC:
             raise ValueError('Invalid model name')
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = TorchModelFactory.MODELS_SEMANTIC[model_name]().to(device)
+        model = ModelFactory.MODELS_SEMANTIC[model_name]().to(device)
         model.eval()
         return model
 

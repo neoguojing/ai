@@ -3,7 +3,8 @@ from pytorch_model_factory import TorchModelFactory
 # from detectron2.data import MetadataCatalog
 import torch
 import torchvision.transforms as transforms
-
+from PIL import Image
+from typing import Any, Dict
 class YOLOPredictor:
 
     def __init__(self, cfg=None):
@@ -30,8 +31,44 @@ class YOLOPredictor:
     
     def _post_processor(self,output):
         print("-------------------\n",output)
+        pil_images = []
+
+        result: Dict[str, Dict[str, Any]] = {
+            "instances": {
+                "image_size": None,
+                "pred_boxes": None,
+                "pred_masks": None,
+                "scores": None,
+                "pred_keypoints": None,
+                "pred_obb": None,
+            }
+        }
+
         for i,o in enumerate(output):
-            o.save(filename=f"results{i}.jpg")
+            # o.save(filename=f"results{i}.jpg")
+            im_bgr = o.plot()
+            im_rgb = Image.fromarray(im_bgr[..., ::-1])
+            pil_images.append(im_rgb)
+            
+            result["instances"]["image_size"] = o.orig_shape
+
+            if o.boxes is not None:
+                result["instances"]["pred_boxes"] = o.boxes.xywhn
+
+            if o.masks is not None:
+                result["instances"]["pred_masks"] = o.masks.xyn
+
+            if o.probs is not None:
+                result["instances"]["scores"] = o.probs.top1
+
+            if o.keypoints is not None:
+                result["instances"]["pred_keypoints"] = o.keypoints.xyn
+
+            if o.obb is not None:
+                result["instances"]["pred_obb"] = o.obb.xywhr
+
+        return result,pil_images
+
 
     def release(self):
         import gc

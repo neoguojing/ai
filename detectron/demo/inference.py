@@ -152,6 +152,9 @@ class ModelFactory:
                 "features":output["features"].tolist(),
             }
 
+        if serialized is None:
+            return output
+        
         return serialized
     
     def predict(self,pil_image,task_type="panoptic"):
@@ -176,29 +179,14 @@ class ModelFactory:
         elif task_type == "yolo":
             result,vis_output = self.yolo(input_image=pil_image)
 
-        pil_images = []
-        if vis_output is not None:
-            if self.need_save_images:
-                self.save_vis_image(vis_output)
+        # pil_images = []
+        # if vis_output is not None:
+        #     if self.need_save_images:
+        #         self.save_vis_image(vis_output)
             
-            pil_images = self.visimage_to_pil(vis_output)
+        #     pil_images = self.visimage_to_pil(vis_output)
         
-        return self.serialize(result),pil_images
-
-    def save_vis_image(self,visimages):
-        import uuid
-        for visimage in visimages:
-            unique_id = uuid.uuid1()
-            visualized_image = visimage.get_image()[:, :, ::-1]
-            cv2.imwrite(self.output_dir+str(unique_id)+".png", visualized_image)
-
-    def visimage_to_pil(self,visimages):
-        pil_images = []
-        for visimage in visimages:
-            visualized_image = visimage.get_image()[:, :, ::-1]
-            pil_image = Image.fromarray(visualized_image)
-            pil_images.append(pil_image)
-        return pil_images
+        return self.serialize(result),vis_output
 
 
     def extract(self, input_image=None,image_path: str="./test.png"):

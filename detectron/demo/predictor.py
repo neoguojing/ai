@@ -18,6 +18,7 @@ from detectron2 import model_zoo
 from pytorch_predictor import PytorchPredictor
 from yolo_predictor import YOLOPredictor
 from detectron2.data.detection_utils import convert_PIL_to_numpy
+from PIL import Image
 
 class InferenceBase:
     def __init__(self, cfg, instance_mode=ColorMode.IMAGE, parallel=False,device="cpu",thresh_hold=0.5):
@@ -126,8 +127,24 @@ class InferenceBase:
                         prediction
                     )
                 vis_outputs.append(vis_output)
-        return vis_outputs
+        pil_images = self.visimage_to_pil(vis_outputs)
+        return pil_images
     
+    def visimage_to_pil(self,visimages):
+        pil_images = []
+        for visimage in visimages:
+            visualized_image = visimage.get_image()[:, :, ::-1]
+            pil_image = Image.fromarray(visualized_image)
+            pil_images.append(pil_image)
+        return pil_images
+    
+    def save_vis_image(self,visimages):
+        import uuid
+        for visimage in visimages:
+            unique_id = uuid.uuid1()
+            visualized_image = visimage.get_image()[:, :, ::-1]
+            cv2.imwrite(self.output_dir+str(unique_id)+".png", visualized_image)
+
     def run_on_image(self,image):
         """
         Args:
@@ -138,13 +155,13 @@ class InferenceBase:
             predictions (dict): the output of the model.
             vis_outputs ([VisImage]): the visualized image output.
         """
-        if self.cfg.TASK_TYPE != "yolo":
+        if hasattr(self.cfg,"TASK_TYPE") and self.cfg.TASK_TYPE == "yolo":
+            predictions,plot_images = self.predictor(image)
+            return predictions, plot_images
+        else:
             predictions = self.predictor(image)
             predictions = self.filter_outputs(predictions)
-            vis_outputs = self.plot(image,predictions)
-            return predictions, vis_outputs
-        else:
-            predictions,plot_images = self.predictor(image)
+            plot_images = self.plot(image,predictions)
             return predictions, plot_images
 
     def _frame_from_video(self, video):

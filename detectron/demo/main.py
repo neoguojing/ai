@@ -84,12 +84,11 @@ def create_ui():
                 with gr.Column(scale=2):
                     with gr.Row(elem_id=''):
                         with gr.Group():
-                            components["face_input"] = gr.Image(type="pil",elem_id='face-input',label='输入')
+                            components["face_input"] = gr.Gallery(elem_id='face-input',label='输入',columns=2,type="pil")
                 with gr.Column(scale=2):
                     with gr.Row():
                         with gr.Group():
-                            components["face_image_output"] = gr.Gallery(elem_id='face_image_output',label='输出',columns=5,interactive=False)
-                            components["face_input1"] = gr.Image(type="pil",elem_id='face-input1',label='输入1',visible=False)
+                            components["face_image_output"] = gr.Gallery(elem_id='face_image_output',label='输出',columns=2,interactive=False)
 
             with gr.Row():
                 with gr.Group():
@@ -124,7 +123,7 @@ def create_event_handlers():
     )
 
     components["face_submit_btn"].click(
-        do_face_refernce,gradio('face_type','face_input','face_input1'),gradio("face_output",'face_image_output')
+        do_face_refernce,gradio('face_type','face_input'),gradio("face_output",'face_image_output')
     )
 
 def do_refernce(algo_type,input_image):
@@ -145,32 +144,27 @@ def do_refernce(algo_type,input_image):
 
 def ui_by_facetype(face_type):
     print("ui_by_facetype",face_type)
-    if face_type == "人脸比对":
-        components["face_image_output"].update(visible=False)
-        components["face_input1"].update(visible=True)
-    else:
-        components["face_image_output"].update(visible=True)
-        components["face_input1"].update(visible=False)
 
 
-def do_face_refernce(algo_type,input_image,input_image1):
-# def do_refernce():
-    print("input image",input_image)
+def do_face_refernce(algo_type,input_images):
+    print("input image",input_images)
     print(algo_type)
 
-    if input_image is None:
+    if input_images is None:
         gr.Warning('请上传图片')
         return None
     
+    input1 = input_images[0][0]
+    input2 = None
     algo_type = face_algo_map[algo_type]
+    if algo_type == "compare" and len(input_images) >=2:
+        input2 = input_images[1][0]
+
     m = FaceAlgo()  # pragma: no cover
-    out,faces = m.predict(pil_image=input_image,pil_image1=input_image1,algo_type=algo_type)
-    if algo_type == "compare":
-        return out,None
-    else:
-        # TODO 防止人脸过多的处理
-        return out,faces
+    out,faces = m.predict(pil_image=input1,pil_image1=input2,algo_type=algo_type)
+
+    return out,faces
 
 if __name__ == "__main__":
     demo = create_ui()
-    demo.launch()
+    demo.launch(server_name="10.151.124.137")

@@ -1,7 +1,8 @@
 import sys
 sys.path.append("..")
 from deepface import DeepFace
-from detectron2.data.detection_utils import pil_image_to_numpy
+from detectron2.data.detection_utils import pil_image_to_numpy,convert_PIL_to_numpy
+from detectron2.utils.visualizer import ColorMode, Visualizer
 import numpy as np
 import time
 
@@ -54,6 +55,24 @@ class FaceAlgo:
         #convert numpy array to PIL Image
         return Image.fromarray(np_img)
 
+    def draw_face_box(self,image,face_areas):
+        if not isinstance(image,np.ndarray):
+            image = convert_PIL_to_numpy(image,format=None)
+
+        image = image[:, :, ::-1]
+        visualizer = Visualizer(image,instance_mode=ColorMode)
+        for area in face_areas:
+            x = area['x']
+            y = area['y']
+            w = area['w']
+            h = area['h']
+            visualizer.draw_box((x,y,x+w,y+h),edge_color="r")
+        
+        visualized_image = visualizer.get_output().get_image()
+        # [:, :, ::-1]
+        return Image.fromarray(visualized_image)
+        
+        
 
     def predict(self,pil_image,pil_image1=None,algo_type="detect"):
         image = pil_image_to_numpy(pil_image)
@@ -77,37 +96,64 @@ class FaceAlgo:
             img1_path = a, 
             img2_path = b, 
             detector_backend = self.backends[0],
+            distance_metric = self.distance_metric[0],
         )
 
-        return obj
+        face_area1 = [obj['facial_areas']['img1']]
+        face1 = self.draw_face_box(a,face_area1)
+        face_area2 = [obj['facial_areas']['img2']]
+        face2 = self.draw_face_box(b,face_area2)
+        current_timestamp = time.time()
+        if self.need_save_image:
+                face1.save(f"{current_timestamp}_0.png")
+                face2.save(f"{current_timestamp}_1.png")
+        return obj,[face1,face2]
 
     def recognition(self,a):
         #face recognition
         dfs = DeepFace.find(
             img_path = a, 
-            db_path = "./", 
+            db_path = "./test/", 
             detector_backend = self.backends[1],
+            distance_metric = self.distance_metric[0],
         )
 
-        return dfs
+        json_list = [df.to_json(orient='records') for df in dfs]
+        top1_path = dfs[0].at[0, 'identity']
+        top1_pil = Image.open(top1_path)
+        return json_list,[top1_pil]
 
     def embeddings(self,a):
         #embeddings
         embedding_objs = DeepFace.represent(
             img_path = a, 
-            detector_backend = self.backends[2],
+            detector_backend = self.backends[5],
         )
-
-        return embedding_objs
+        face_areas = []
+        for obj in embedding_objs:
+            face_areas.append(obj['facial_area']) 
+        face = self.draw_face_box(a,face_areas)
+        current_timestamp = time.time()
+        if self.need_save_image:
+                face.save(f"{current_timestamp}.png")
+        return embedding_objs,[face]
     
     def analysis(self,a):
         #facial analysis
         demographies = DeepFace.analyze(
             img_path = a, 
-            detector_backend = self.backends[3],
+            detector_backend = self.backends[5],
         )
 
-        return demographies
+        face_areas = []
+        for obj in demographies:
+            face_areas.append(obj['region']) 
+        face = self.draw_face_box(a,face_areas)
+
+        current_timestamp = time.time()
+        if self.need_save_image:
+                face.save(f"{current_timestamp}.png")
+        return demographies,[face]
 
     def detect(self,a):
         #face detection and alignment
@@ -130,10 +176,11 @@ class FaceAlgo:
             faces.append(face_image)
         return ret,faces
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
     
-#     m = FaceAlgo()  # pragma: no cover
+    m = FaceAlgo(need_save_image=True)  # pragma: no cover
 
-#     image = Image.open("./face1.jpeg")
-#     out = m.predict(image)
-#     print(out)
+    image = Image.open("./test/face1.jpeg")
+    image1 = Image.open("./test/face2.jpeg")
+    out = m.predict(image,image1,algo_type="recognize")
+    print("-----------------",out)

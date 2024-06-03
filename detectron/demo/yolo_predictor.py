@@ -4,7 +4,7 @@ from pytorch_model_factory import TorchModelFactory
 import torch
 import torchvision.transforms as transforms
 
-class PytorchPredictor:
+class YOLOPredictor:
 
     def __init__(self, cfg=None):
         # self.cfg = cfg.clone()  # cfg can be modified by model
@@ -44,7 +44,7 @@ class PytorchPredictor:
         gc.collect()
 
 if __name__ == "__main__":
-    f = PytorchPredictor()
+    f = YOLOPredictor()
     from PIL import Image
     img = Image.open("./test/test.png")
     f(img)

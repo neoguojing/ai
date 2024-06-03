@@ -16,6 +16,7 @@ from detectron2.utils.video_visualizer import VideoVisualizer
 from detectron2.utils.visualizer import ColorMode, Visualizer
 from detectron2 import model_zoo
 from pytorch_predictor import PytorchPredictor
+from yolo_predictor import YOLOPredictor
 from detectron2.data.detection_utils import convert_PIL_to_numpy
 
 class InferenceBase:
@@ -47,8 +48,10 @@ class InferenceBase:
                 self.predictor = DefaultPredictor(cfg)
         elif cfg.TASK_TYPE is not None:
             # 用于pytorch模型
-            print("---------------------------")
-            self.predictor = PytorchPredictor(cfg)
+            if cfg.TASK_TYPE == "yolo":
+                self.predictor = YOLOPredictor(cfg)
+            else:
+                self.predictor = PytorchPredictor(cfg)
 
         self.output_dir = "./"
         self.thresh_hold = thresh_hold
@@ -135,12 +138,14 @@ class InferenceBase:
             predictions (dict): the output of the model.
             vis_outputs ([VisImage]): the visualized image output.
         """
-        
-        predictions = self.predictor(image)
-        predictions = self.filter_outputs(predictions)
-        
-        vis_outputs = self.plot(image,predictions)
-        return predictions, vis_outputs
+        if self.cfg.TASK_TYPE != "yolo":
+            predictions = self.predictor(image)
+            predictions = self.filter_outputs(predictions)
+            vis_outputs = self.plot(image,predictions)
+            return predictions, vis_outputs
+        else:
+            predictions,plot_images = self.predictor(image)
+            return predictions, plot_images
 
     def _frame_from_video(self, video):
         while video.isOpened():

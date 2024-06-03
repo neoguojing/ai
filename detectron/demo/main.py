@@ -36,6 +36,7 @@ algo_map = {
     "实例分割":"instance",
     "关键点检测":"keypoint",
     "全景分割":"panoptic",
+    "YOLO":"yolo",
 }
 
 face_algo_map = {
@@ -52,7 +53,7 @@ def create_ui():
             with gr.Row():
                 with gr.Column(scale=2):
                     components["algo_type"] = gr.Dropdown(
-                                    ["目标检测","单阶段目标检测", "分类", "特征提取","语义分割","实例分割","关键点检测","全景分割"],value="全景分割",
+                                    ["目标检测","单阶段目标检测", "分类", "特征提取","语义分割","实例分割","关键点检测","全景分割","YOLO"],value="全景分割",
                                     label="算法类别",interactive=True
                             )
                 with gr.Column(scale=2):

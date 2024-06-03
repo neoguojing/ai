@@ -85,9 +85,7 @@ class PytorchPredictor:
             output_predictions = output.argmax(1)
             output_predictions = output_predictions.cpu()
             result = {"sem_segs":output_predictions}
-        elif self.task_type == "yolo":
-            pass
-    
+
         return result
 
     def release(self):

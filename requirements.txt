@@ -3,3 +3,4 @@ tf-keras==2.16.0
 facenet_pytorch==2.6.0
 torch==2.2.2
 ultralytics==8.2.28
+segment_anything==1.0

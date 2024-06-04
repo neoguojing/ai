@@ -94,6 +94,14 @@ def create_ui():
             with gr.Row():
                 with gr.Group():
                     components["face_output"] = gr.JSON(label="推理结果")
+        with gr.Tab("SAM everything"): 
+               with gr.Row():
+                with gr.Column(scale=2):
+                    with gr.Group():
+                        components["sam_input"] = gr.ImageEditor(elem_id='sam-input',label='输入',type="pil")
+                with gr.Column(scale=2):
+                    with gr.Group():
+                        components["sam_output"] = gr.Gallery(elem_id='sam_output',label='输出',columns=2,interactive=False)
 
         # with gr.Tab("OCR"):  
 

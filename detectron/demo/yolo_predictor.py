@@ -5,6 +5,7 @@ import torch
 import torchvision.transforms as transforms
 from PIL import Image
 from typing import Any, Dict
+from detectron2.structures import Instances
 class YOLOPredictor:
 
     def __init__(self, cfg=None):
@@ -33,39 +34,34 @@ class YOLOPredictor:
         print("-------------------\n",output)
         pil_images = []
 
-        result: Dict[str, Dict[str, Any]] = {
-            "instances": {
-                "image_size": None,
-                "pred_boxes": None,
-                "pred_masks": None,
-                "scores": None,
-                "pred_keypoints": None,
-                "pred_obb": None,
-            }
+        result: Dict[str, Instances] = {
+            "instances": None
         }
 
+        # TODO 只支持一个图片
         for i,o in enumerate(output):
             # o.save(filename=f"results{i}.jpg")
             im_bgr = o.plot()
             im_rgb = Image.fromarray(im_bgr[..., ::-1])
             pil_images.append(im_rgb)
             
-            result["instances"]["image_size"] = o.orig_shape
+            result["instances"] = Instances(o.orig_shape)
 
             if o.boxes is not None:
-                result["instances"]["pred_boxes"] = o.boxes.xywhn
+                print(o.boxes.xywh,o.boxes.xywh.shape)
+                result["instances"].pred_boxes = o.boxes.xywh
 
             if o.masks is not None:
-                result["instances"]["pred_masks"] = o.masks.xyn
+                result["instances"].pred_masks = o.masks.xyn
 
             if o.probs is not None:
-                result["instances"]["scores"] = o.probs.top1
+                result["instances"].scores = o.probs.top1
 
             if o.keypoints is not None:
-                result["instances"]["pred_keypoints"] = o.keypoints.xyn
+                result["instances"].pred_keypoints = o.keypoints.xyn
 
             if o.obb is not None:
-                result["instances"]["pred_obb"] = o.obb.xywhr
+                result["instances"].pred_obb = o.obb.xywhr
 
         return result,pil_images
 

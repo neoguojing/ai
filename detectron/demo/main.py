@@ -138,7 +138,7 @@ def do_refernce(algo_type,input_image):
     algo_type = algo_map[algo_type]
     factory = ModelFactory()
     output,output_image = factory.predict(pil_image=input_image,task_type=algo_type)
-    if len(output_image) == 0:
+    if output_image is None or len(output_image) == 0:
         return output,None
     print("output image",output_image[0])
     return output,output_image[0]
@@ -153,13 +153,16 @@ def do_face_refernce(algo_type,input_images):
 
     if input_images is None:
         gr.Warning('请上传图片')
-        return None
+        return None,None
     
     input1 = input_images[0][0]
     input2 = None
     algo_type = face_algo_map[algo_type]
     if algo_type == "compare" and len(input_images) >=2:
         input2 = input_images[1][0]
+    elif algo_type == "compare" and len(input_images) < 2:
+        gr.Warning('请上传两张图片')    
+        return None,None
 
     m = FaceAlgo()  # pragma: no cover
     out,faces = m.predict(pil_image=input1,pil_image1=input2,algo_type=algo_type)

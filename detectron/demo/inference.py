@@ -114,9 +114,9 @@ class ModelFactory:
             serialized = {
                 'image_height': output["instances"].image_size[0],
                 'image_width': output["instances"].image_size[1],
-                'pred_boxes': output["instances"].pred_boxes.tensor.tolist(),
-                'scores': output["instances"].scores.tolist(),
-                'pred_classes': output["instances"].pred_classes.tolist()
+                'pred_boxes': output["instances"].pred_boxes.tolist() if isinstance(output["instances"].pred_boxes, torch.Tensor) else output["instances"].pred_boxes.tensor.tolist(),
+                'scores': output["instances"].scores.tolist() if output["instances"].has("scores") else None,
+                'pred_classes': output["instances"].pred_classes.tolist() if output["instances"].has("pred_classes") else None
             }
 
             if hasattr(output["instances"],"pred_masks"):

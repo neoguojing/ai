@@ -18,22 +18,48 @@ def seg_all(imput_image):
     sam = sam_model_registry["vit_b"](checkpoint="./sam_vit_b_01ec64.pth")
     mask_generator = SamAutomaticMaskGenerator(sam)
     masks = mask_generator.generate(imput_image)
-    print(masks)
+    pil_images = draw_bitmask(imput_image,masks)
+    # pil_images = draw_polygon(imput_image,masks)
+    # pil_images = draw_bitmask_split(imput_image,masks)
+    return masks,pil_images
+
+# 为每个二值掩码生成一张图片
+def draw_bitmask_split(np_image,masks):
+    for i,obj in enumerate(masks):
+        print("segmentation:",obj["segmentation"].shape)
+        view = Visualizer(np_image)
+        view.draw_binary_mask(obj["segmentation"])
+        vis_image = view.get_output()
+        pil_images = visimage_to_pil([vis_image],idx=i)
+    return pil_images
+
+# 绘制二值掩码
+def draw_bitmask(np_image,masks):
     view = Visualizer(np_image)
     for obj in masks:
         print("segmentation:",obj["segmentation"].shape)
         view.draw_binary_mask(obj["segmentation"])
-        polygon = bitmask_to_polygon(obj["segmentation"])
-        view.draw_polygon(polygon,"r")
-
+        
     vis_image = view.get_output()
     pil_images = visimage_to_pil([vis_image])
-    return masks,pil_images
+    return pil_images
 
+# 绘制多边形掩码
+def draw_polygon(np_image,masks):
+    view = Visualizer(np_image)
+    for obj in masks:
+        polygon = bitmask_to_polygon(obj["segmentation"])
+        view.draw_polygon(polygon,"k")
+    vis_image = view.get_output()
+    pil_images = visimage_to_pil([vis_image])
+    return pil_images
+
+
+# 二值掩码转换为多边形掩码
 def bitmask_to_polygon(mask):
     col_mask = np.asfortranarray(mask)
     contours = measure.find_contours(col_mask,0.5)
-    print("contours------",contours)
+    print("contours------",contours.shape)
     for i,contour in enumerate(contours):
         contour = np.flip(contour, axis=1)
         print(f"polygon_{i}",contour.shape)
@@ -41,12 +67,15 @@ def bitmask_to_polygon(mask):
         # print(f"polygon_{i}",polygon)
     return contour
 
-def visimage_to_pil(visimages):
+# VIS图片转换为pil
+def visimage_to_pil(visimages,need_save=True,idx=0):
     pil_images = []
     for i,visimage in enumerate(visimages):
-        visualized_image = visimage.get_image()[:, :, ::-1]
+        visualized_image = visimage.get_image()
+        # [:, :, ::-1]
         pil_image = Image.fromarray(visualized_image)
-        pil_image.save(f"{i}.jpg")
+        if need_save:
+            pil_image.save(f"{idx}_{i}.jpg")
         pil_images.append(pil_image)
     return pil_images
 

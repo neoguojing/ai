@@ -179,4 +179,5 @@ def do_face_refernce(algo_type,input_images):
 
 if __name__ == "__main__":
     demo = create_ui()
-    demo.launch(server_name="10.151.124.137")
+    # demo.launch(server_name="10.151.124.137")
+    demo.launch()

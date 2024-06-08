@@ -80,7 +80,7 @@ def visimage_to_pil(visimages,need_save=True,idx=0):
     return pil_images
 
 if __name__ == "__main__":
-    np_image = read_image("./test/cat.jpg")
+    np_image = read_image("./test/face1.jpeg")
     print("np_image:",np_image.shape)
     seg_all(np_image)
     

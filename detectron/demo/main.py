@@ -135,6 +135,14 @@ def create_event_handlers():
         do_face_refernce,gradio('face_type','face_input'),gradio("face_output",'face_image_output')
     )
 
+    components["sam_input"].upload(
+        do_sam_everything,gradio('sam_input'),gradio("sam_output")
+    )
+
+    components["sam_input"].change(
+        do_sam_everything,gradio('sam_input'),gradio("sam_output")
+    )
+
 def do_refernce(algo_type,input_image):
 # def do_refernce():
     print("input image",input_image)
@@ -176,6 +184,13 @@ def do_face_refernce(algo_type,input_images):
     out,faces = m.predict(pil_image=input1,pil_image1=input2,algo_type=algo_type)
 
     return out,faces
+
+def do_sam_everything(im):
+    print(im)
+    # im['background']
+
+    return [im['background'],im["layers"][0],im['composite']]
+
 
 if __name__ == "__main__":
     demo = create_ui()

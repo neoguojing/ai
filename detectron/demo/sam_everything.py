@@ -2,19 +2,29 @@ from segment_anything import SamPredictor, sam_model_registry,SamAutomaticMaskGe
 from PIL import Image
 import sys
 sys.path.append("..")
-from detectron2.data.detection_utils import read_image
+from detectron2.data.detection_utils import read_image,pil_image_to_numpy
 from detectron2.utils.visualizer import Visualizer
 import numpy as np
 from skimage import measure
 
-def seg_with_promp(imput_image,input_prompts):
+def seg_with_promp(imput_image,point_coords=None,box=None):
+    if isinstance(imput_image, Image.Image):
+        imput_image = pil_image_to_numpy(imput_image)
+
+    if point_coords is not None:
+        point_labels = np.ones(point_coords.shape[0])
     sam = sam_model_registry["vit_b"](checkpoint="./sam_vit_b_01ec64.pth")
     predictor = SamPredictor(sam)
     predictor.set_image(imput_image)
-    masks, _, _ = predictor.predict(input_prompts)
-    return masks
+    masks, _, _ = predictor.predict(point_coords=point_coords,point_labels=point_labels,box=box)
+    print("seg_with_promp:",masks.shape)
+    pil_images = draw_bitmask(imput_image,masks)
+    return masks,pil_images
 
 def seg_all(imput_image):
+    if isinstance(imput_image, Image.Image):
+        imput_image = pil_image_to_numpy(imput_image)
+
     sam = sam_model_registry["vit_b"](checkpoint="./sam_vit_b_01ec64.pth")
     mask_generator = SamAutomaticMaskGenerator(sam)
     masks = mask_generator.generate(imput_image)
@@ -37,8 +47,11 @@ def draw_bitmask_split(np_image,masks):
 def draw_bitmask(np_image,masks):
     view = Visualizer(np_image)
     for obj in masks:
-        print("segmentation:",obj["segmentation"].shape)
-        view.draw_binary_mask(obj["segmentation"])
+        if "segmentation" in obj:
+            print("segmentation:",obj["segmentation"].shape)
+            view.draw_binary_mask(obj["segmentation"])
+        else:
+            view.draw_binary_mask(masks[2])
         
     vis_image = view.get_output()
     pil_images = visimage_to_pil([vis_image])
@@ -78,6 +91,21 @@ def visimage_to_pil(visimages,need_save=True,idx=0):
             pil_image.save(f"{idx}_{i}.jpg")
         pil_images.append(pil_image)
     return pil_images
+
+def image_to_mask(image, threshold=128):
+    # 将图像转换为灰度图像
+    if image.mode != 'L':
+        image = image.convert('L')
+    
+    # 将像素值映射到二进制值
+    mask_array = np.array(image) > threshold
+    
+    # 创建一个与原始图像大小相同的数组，用映射后的二进制值填充
+    mask_image = Image.fromarray(np.uint8(mask_array) * 255)
+    
+    return mask_image
+
+
 
 if __name__ == "__main__":
     np_image = read_image("./test/face1.jpeg")

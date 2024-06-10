@@ -5,12 +5,13 @@ from pathlib import Path
 import gradio as gr
 from PIL import Image
 import torch
-
+import numpy as np
 import sys
 sys.path.append("..")
 
 from inference import ModelFactory
 from face import FaceAlgo
+from sam_everything import seg_all,seg_with_promp
 
 components = {}
 
@@ -95,7 +96,10 @@ def create_ui():
                 with gr.Group():
                     components["face_output"] = gr.JSON(label="推理结果")
         with gr.Tab("SAM everything"): 
-               with gr.Row():
+            with gr.Row():
+                with gr.Column(scale=2):
+                    components["sam_submit_btn"] = gr.Button(value="解析")
+            with gr.Row():
                 with gr.Column(scale=2):
                     with gr.Group():
                         components["sam_input"] = gr.ImageEditor(elem_id='sam-input',label='输入',type="pil")
@@ -135,11 +139,15 @@ def create_event_handlers():
         do_face_refernce,gradio('face_type','face_input'),gradio("face_output",'face_image_output')
     )
 
-    components["sam_input"].upload(
-        do_sam_everything,gradio('sam_input'),gradio("sam_output")
-    )
+    # components["sam_input"].upload(
+    #     do_sam_everything,gradio('sam_input'),gradio("sam_output")
+    # )
 
-    components["sam_input"].change(
+    # components["sam_input"].change(
+    #     do_sam_everything,gradio('sam_input'),gradio("sam_output")
+    # )
+
+    components["sam_submit_btn"].click(
         do_sam_everything,gradio('sam_input'),gradio("sam_output")
     )
 
@@ -188,9 +196,31 @@ def do_face_refernce(algo_type,input_images):
 def do_sam_everything(im):
     print(im)
     # im['background']
+    print(im["layers"][0])
+    image_pil = im['background']
+    points = point_to_mask(im["layers"][0])
+    images = None
+    if points.shape[0] == 0:
+        _, images = seg_all(image_pil)
+    else:
+        _, images = seg_with_promp(image_pil,point_coords=points)
+    # return [im['background'],im["layers"][0],im['composite']]
+    return images
 
-    return [im['background'],im["layers"][0],im['composite']]
-
+def point_to_mask(pil_image):
+    # 遍历每个像素
+    width, height = pil_image.size
+    print(width, height)
+    points_list = []
+    for x in range(width):
+        for y in range(height):
+            # 获取像素的RGB值
+            pix_val = pil_image.getpixel((x, y))
+            if pix_val[0] != 0 and pix_val[1] != 0 and pix_val[2] != 0:
+                points_list.append((x, y))
+    points_array = np.array(points_list)
+    points_array_reshaped = points_array.reshape(-1, 2)
+    return points_array_reshaped
 
 if __name__ == "__main__":
     demo = create_ui()

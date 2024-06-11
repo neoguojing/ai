@@ -6,12 +6,14 @@ import gradio as gr
 from PIL import Image
 import torch
 import numpy as np
+from gradio_image_prompter import ImagePrompter
 import sys
 sys.path.append("..")
 
 from inference import ModelFactory
 from face import FaceAlgo
 from sam_everything import seg_all,seg_with_promp
+
 
 components = {}
 
@@ -102,10 +104,11 @@ def create_ui():
             with gr.Row():
                 with gr.Column(scale=2):
                     with gr.Group():
-                        components["sam_input"] = gr.ImageEditor(elem_id='sam-input',label='输入',type="pil")
+                        # components["sam_input"] = gr.ImageEditor(elem_id='sam-input',label='输入',type="pil")
+                        components["sam_input"] = ImagePrompter(elem_id='sam-input',label='输入',type="pil")
                 with gr.Column(scale=2):
                     with gr.Group():
-                        components["sam_output"] = gr.Gallery(elem_id='sam_output',label='输出',columns=2,interactive=False)
+                        components["sam_output"] = gr.Gallery(elem_id='sam_output',label='输出',columns=1,interactive=False)
 
         # with gr.Tab("OCR"):  
 
@@ -195,16 +198,30 @@ def do_face_refernce(algo_type,input_images):
 
 def do_sam_everything(im):
     print(im)
-    # im['background']
-    print(im["layers"][0])
-    image_pil = im['background']
-    points = point_to_mask(im["layers"][0])
+    image_pil = im['image']
+    points = im['points']
     images = None
-    if points.shape[0] == 0:
+    if points is None or len(points) == 0:
         _, images = seg_all(image_pil)
     else:
-        _, images = seg_with_promp(image_pil,point_coords=points)
-    # return [im['background'],im["layers"][0],im['composite']]
+        point_coords = []
+        box = None
+        for item in points:
+            if item[2] == 1:
+                # 点类型
+                point_coords.append([item[0],item[1]])
+            else:
+                # box类型,只使用最后一个box
+                box = [item[0],item[1],item[3],item[4]]
+                box = np.array(box)
+        
+        if box is not None:
+            _, images = seg_with_promp(image_pil,box=box)
+        else:
+            coords = np.array(point_coords)
+            print("point_coords:",coords.shape)
+            _, images = seg_with_promp(image_pil,point_coords=coords)
+        
     return images
 
 def point_to_mask(pil_image):

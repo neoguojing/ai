@@ -5,13 +5,24 @@ import torch
 import torchvision
 import torchvision.models.segmentation as segmentation
 from ultralytics import YOLO
+from threading import Lock
 # import tensorrt
 # import tensorrt as trt
 # import onnx
 # import onnxruntime as ort
 
 class TorchModelFactory:
-    
+    _instance = None
+    _lock = Lock()
+
+    _feature_extract_models = {}
+    _detect_models = {}
+    _classification_models = {}
+    _instance_models = {}
+    _semantic_models = {}
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
     MODELS_FEATURE_EXTRACT = {
         'resnet': lambda: models.resnet101(weights=models.ResNet101_Weights.IMAGENET1K_V1),
         'vgg16': lambda: models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1),
@@ -36,67 +47,101 @@ class TorchModelFactory:
     }
 
     MODELS_INSTANCE = {
-        'maskrcnn': lambda: torchvision.models.detection.maskrcnn_resnet50_fpn(weights=detection.MaskRCNN_ResNet50_FPN_Weights.COCO_V1),
+        'maskrcnn': lambda: detection.maskrcnn_resnet50_fpn(weights=detection.MaskRCNN_ResNet50_FPN_Weights.COCO_V1),
         'yolact': lambda: torch.hub.load('dbolya/yolact', 'yolact_resnet50', pretrained=True)
     }
 
     MODELS_SEMANTIC = {
-        'deeplabv3': lambda: torchvision.models.segmentation.deeplabv3_resnet101(weights=segmentation.DeepLabV3_ResNet101_Weights.COCO_WITH_VOC_LABELS_V1),
-        'pspnet': lambda: torchvision.models.segmentation.pspnet(pretrained=True),
+        'deeplabv3': lambda: segmentation.deeplabv3_resnet101(weights=segmentation.DeepLabV3_ResNet101_Weights.COCO_WITH_VOC_LABELS_V1),
+        'pspnet': lambda: segmentation.pspnet_resnet50(pretrained=True),
         'bisenetv1': lambda: torch.hub.load('catalyst-team/deeplabv3', 'deeplabv3_resnet50', pretrained=True)
     }
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            with cls._lock:
+                if not cls._instance:
+                    cls._instance = super(TorchModelFactory, cls).__new__(cls)
+        return cls._instance
 
     @staticmethod    
     def create_feature_extract_model(model_name):
         if model_name not in TorchModelFactory.MODELS_FEATURE_EXTRACT:
             raise ValueError('Invalid model name')
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = TorchModelFactory.MODELS_FEATURE_EXTRACT[model_name]().to(device)
-        model.eval()
-        return model
-    
+
+        if model_name not in TorchModelFactory._feature_extract_models:
+            with TorchModelFactory._lock:
+                if model_name not in TorchModelFactory._feature_extract_models:
+                    model = TorchModelFactory.MODELS_FEATURE_EXTRACT[model_name]().to(TorchModelFactory.device)
+                    model.eval()
+                    TorchModelFactory._feature_extract_models[model_name] = model
+
+        return TorchModelFactory._feature_extract_models[model_name]
+
     @staticmethod  
     def create_detect_model(model_name):
         if model_name not in TorchModelFactory.MODELS_DETECT:
             raise ValueError('Invalid model name')
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = TorchModelFactory.MODELS_DETECT[model_name]().to(device)
-        model.eval()
-        return model
-    
+
+        if model_name not in TorchModelFactory._detect_models:
+            with TorchModelFactory._lock:
+                if model_name not in TorchModelFactory._detect_models:
+                    model = TorchModelFactory.MODELS_DETECT[model_name]().to(TorchModelFactory.device)
+                    model.eval()
+                    TorchModelFactory._detect_models[model_name] = model
+
+        return TorchModelFactory._detect_models[model_name]
+
     @staticmethod  
     def create_yolo_detect_model():
-        model = TorchModelFactory.MODELS_DETECT["Yolo"]()
-        return model
+        if "Yolo" not in TorchModelFactory._detect_models:
+            with TorchModelFactory._lock:
+                if "Yolo" not in TorchModelFactory._detect_models:
+                    model = TorchModelFactory.MODELS_DETECT["Yolo"]()
+                    TorchModelFactory._detect_models["Yolo"] = model
+        return TorchModelFactory._detect_models["Yolo"]
 
     @staticmethod
     def create_classication_model(model_name):
         if model_name not in TorchModelFactory.MODELS_CLASSIFICATION:
             raise ValueError('Invalid model name')
-        # Use GPU if available
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = TorchModelFactory.MODELS_CLASSIFICATION[model_name]().to(device)
-        model.eval() # Set model to inference mode
-        return model
+
+        if model_name not in TorchModelFactory._classification_models:
+            with TorchModelFactory._lock:
+                if model_name not in TorchModelFactory._classification_models:
+                    model = TorchModelFactory.MODELS_CLASSIFICATION[model_name]().to(TorchModelFactory.device)
+                    model.eval()
+                    TorchModelFactory._classification_models[model_name] = model
+
+        return TorchModelFactory._classification_models[model_name]
 
     @staticmethod
     def create_instance_model(model_name):
         if model_name not in TorchModelFactory.MODELS_INSTANCE:
             raise ValueError('Invalid model name')
-        # Use GPU if available
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = TorchModelFactory.MODELS_INSTANCE[model_name]().to(device)
-        model.eval() # Set model to inference mode
-        return model
+
+        if model_name not in TorchModelFactory._instance_models:
+            with TorchModelFactory._lock:
+                if model_name not in TorchModelFactory._instance_models:
+                    model = TorchModelFactory.MODELS_INSTANCE[model_name]().to(TorchModelFactory.device)
+                    model.eval()
+                    TorchModelFactory._instance_models[model_name] = model
+
+        return TorchModelFactory._instance_models[model_name]
 
     @staticmethod
     def create_semantic_model(model_name):
         if model_name not in TorchModelFactory.MODELS_SEMANTIC:
             raise ValueError('Invalid model name')
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = TorchModelFactory.MODELS_SEMANTIC[model_name]().to(device)
-        model.eval()
-        return model
+
+        if model_name not in TorchModelFactory._semantic_models:
+            with TorchModelFactory._lock:
+                if model_name not in TorchModelFactory._semantic_models:
+                    model = TorchModelFactory.MODELS_SEMANTIC[model_name]().to(TorchModelFactory.device)
+                    model.eval()
+                    TorchModelFactory._semantic_models[model_name] = model
+
+        return TorchModelFactory._semantic_models[model_name]
 
     # @staticmethod
     # def convert_model(model, output_path):

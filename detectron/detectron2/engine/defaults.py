@@ -48,6 +48,7 @@ from detectron2.data.detection_utils import convert_PIL_to_numpy
 
 from . import hooks
 from .train_loop import AMPTrainer, SimpleTrainer, TrainerBase
+from threading import Lock
 
 __all__ = [
     "create_ddp_model",
@@ -278,7 +279,7 @@ class DefaultPredictor:
         inputs = cv2.imread("input.jpg")
         outputs = pred(inputs)
     """
-
+    
     def __init__(self, cfg):
         self.cfg = cfg.clone()  # cfg can be modified by model
         self.model = build_model(self.cfg)

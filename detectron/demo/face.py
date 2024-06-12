@@ -1,12 +1,17 @@
 import sys
 sys.path.append("..")
 from deepface import DeepFace
+from deepface.modules import modeling
+from deepface.detectors import DetectorWrapper
 from detectron2.data.detection_utils import pil_image_to_numpy,convert_PIL_to_numpy
 from detectron2.utils.visualizer import ColorMode, Visualizer
 import numpy as np
 import time
 
 from PIL import Image
+
+# print(modeling.model_obj)
+# print(DetectorWrapper.face_detector_obj)
 
 class FaceAlgo:
     
@@ -176,11 +181,11 @@ class FaceAlgo:
             faces.append(face_image)
         return ret,faces
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     
-    m = FaceAlgo(need_save_image=True)  # pragma: no cover
+#     m = FaceAlgo(need_save_image=True)  # pragma: no cover
 
-    image = Image.open("./test/face1.jpeg")
-    image1 = Image.open("./test/face2.jpeg")
-    out = m.predict(image,image1,algo_type="recognize")
-    print("-----------------",out)
+#     image = Image.open("./test/face1.jpeg")
+#     image1 = Image.open("./test/face2.jpeg")
+#     out = m.predict(image,image1,algo_type="recognize")
+#     print("-----------------",out)

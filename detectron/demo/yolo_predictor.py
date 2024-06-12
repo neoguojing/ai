@@ -1,16 +1,25 @@
 
 from pytorch_model_factory import TorchModelFactory
-# from detectron2.data import MetadataCatalog
-import torch
-import torchvision.transforms as transforms
 from PIL import Image
 from typing import Any, Dict
 from detectron2.structures import Instances
-class YOLOPredictor:
+import torch
+import threading
+import gc
 
-    def __init__(self, cfg=None):
-        # self.cfg = cfg.clone()  # cfg can be modified by model
-        # self.task_type = cfg.TASK_TYPE
+class YOLOPredictor:
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls, cfg=None):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super(YOLOPredictor, cls).__new__(cls)
+                    cls._instance._initialize(cfg)
+        return cls._instance
+
+    def _initialize(self, cfg=None):
         self.model = TorchModelFactory.create_yolo_detect_model()
 
     def __call__(self, image):
@@ -30,8 +39,8 @@ class YOLOPredictor:
         predictions = self.model([image])
         return self._post_processor(predictions)
     
-    def _post_processor(self,output):
-        print("-------------------\n",output)
+    def _post_processor(self, output):
+        print("-------------------\n", output)
         pil_images = []
 
         result: Dict[str, Instances] = {
@@ -39,8 +48,7 @@ class YOLOPredictor:
         }
 
         # TODO 只支持一个图片
-        for i,o in enumerate(output):
-            # o.save(filename=f"results{i}.jpg")
+        for i, o in enumerate(output):
             im_bgr = o.plot()
             im_rgb = Image.fromarray(im_bgr[..., ::-1])
             pil_images.append(im_rgb)
@@ -48,7 +56,7 @@ class YOLOPredictor:
             result["instances"] = Instances(o.orig_shape)
 
             if o.boxes is not None:
-                print(o.boxes.xywh,o.boxes.xywh.shape)
+                print(o.boxes.xywh, o.boxes.xywh.shape)
                 result["instances"].pred_boxes = o.boxes.xywh
 
             if o.masks is not None:
@@ -63,23 +71,23 @@ class YOLOPredictor:
             if o.obb is not None:
                 result["instances"].pred_obb = o.obb.xywhr
 
-        return result,pil_images
-
+        return result, pil_images
 
     def release(self):
-        import gc
         # 删除模型对象
         del self.model 
         # 清除GPU缓存
-        if self.cfg.MODEL.DEVICE == "gpu":
+        if torch.cuda.is_available():
             torch.cuda.empty_cache()
         # 手动触发垃圾回收
         gc.collect()
 
-if __name__ == "__main__":
-    f = YOLOPredictor()
-    from PIL import Image
-    img = Image.open("./test/test.png")
-    f(img)
+
+
+# if __name__ == "__main__":
+#     f = YOLOPredictor()
+#     from PIL import Image
+#     img = Image.open("./test/test.png")
+#     f(img)
 
     

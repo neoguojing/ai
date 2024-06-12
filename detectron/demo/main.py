@@ -12,7 +12,7 @@ sys.path.append("..")
 
 from inference import ModelFactory
 from face import FaceAlgo
-from sam_everything import seg_all,seg_with_promp
+from sam_everything import SamAnything
 
 
 components = {}
@@ -197,12 +197,13 @@ def do_face_refernce(algo_type,input_images):
     return out,faces
 
 def do_sam_everything(im):
+    sam_anything = SamAnything()
     print(im)
     image_pil = im['image']
     points = im['points']
     images = None
     if points is None or len(points) == 0:
-        _, images = seg_all(image_pil)
+        _, images = sam_anything.seg_all(image_pil)
     else:
         point_coords = []
         box = None
@@ -216,11 +217,11 @@ def do_sam_everything(im):
                 box = np.array(box)
         
         if box is not None:
-            _, images = seg_with_promp(image_pil,box=box)
+            _, images = sam_anything.seg_with_promp(image_pil,box=box)
         else:
             coords = np.array(point_coords)
             print("point_coords:",coords.shape)
-            _, images = seg_with_promp(image_pil,point_coords=coords)
+            _, images = sam_anything.seg_with_promp(image_pil,point_coords=coords)
         
     return images
 

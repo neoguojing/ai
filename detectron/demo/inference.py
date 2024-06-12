@@ -71,41 +71,16 @@ class ModelConfig:
         return self.cfg
 
 class ModelFactory:
+    _instances = {}
+
     def __init__(self):
-        self.detection_cfg = ModelConfig(ModelCategory.OBJECT_DETECTION, 
-                                         model_path="COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml",
-                                         cfg_path="../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml").get_cfg()
-        
-        self.feature_cfg = ModelConfig(ModelCategory.IMAGE_FEATURE_EXTRACT, 
-                                         model_path=None,
-                                         cfg_path=None).get_cfg()
-        
-        self.classification_cfg = ModelConfig(ModelCategory.IMAGE_CLASSIFICATION, 
-                                         model_path=None,
-                                         cfg_path=None).get_cfg()
-        
-        self.onstep_detection_cfg = ModelConfig(ModelCategory.ONE_STEP_OBJECT_DETECTION, 
-                                         model_path="COCO-Detection/retinanet_R_101_FPN_3x.yaml",
-                                         cfg_path="../configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml").get_cfg()
-        
-        self.instance_segment_cfg = ModelConfig(ModelCategory.INSTANCE_SEGMENTATION, 
-                                         model_path="COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml",
-                                         cfg_path="../configs/COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml").get_cfg()
-        self.semantic_segment_cfg = ModelConfig(ModelCategory.SEMANTIC_SEGMENTATION, 
-                                         model_path=None,
-                                         cfg_path="../configs/PascalVOC-Detection/faster_rcnn_R_50_FPN.yaml").get_cfg()
-        
-        self.panoptic_segment_cfg = ModelConfig(ModelCategory.INSTANCE_SEGMENTATION, 
-                                         model_path="COCO-PanopticSegmentation/panoptic_fpn_R_101_3x.yaml",
-                                         cfg_path="../configs/COCO-PanopticSegmentation/panoptic_fpn_R_101_3x.yaml").get_cfg()
-        self.keypoints_cfg = ModelConfig(ModelCategory.KEYPOINTS, 
-                                         model_path="COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml",
-                                         cfg_path="../configs/COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml").get_cfg()
-        self.yolo_cfg = ModelConfig(ModelCategory.YOLO, 
-                                         model_path=None,
-                                         cfg_path=None).get_cfg()
-        
         self.need_save_images = False
+    
+    @classmethod
+    def get_instance(cls, category, cfg):
+        if category not in cls._instances:
+            cls._instances[category] = InferenceBase(cfg)
+        return cls._instances[category]
     
     def serialize(self,output):
         serialized = None
@@ -178,13 +153,6 @@ class ModelFactory:
             result,vis_output = self.onstep_detect(input_image=pil_image)
         elif task_type == "yolo":
             result,vis_output = self.yolo(input_image=pil_image)
-
-        # pil_images = []
-        # if vis_output is not None:
-        #     if self.need_save_images:
-        #         self.save_vis_image(vis_output)
-            
-        #     pil_images = self.visimage_to_pil(vis_output)
         
         return self.serialize(result),vis_output
 
@@ -193,9 +161,11 @@ class ModelFactory:
         """
         Perform classification on an image using Detectron2.
         """    
-        p = InferenceBase(self.feature_cfg,thresh_hold=0.5)
-        print(self.feature_cfg.MODEL.WEIGHTS,self.feature_cfg.TASK_TYPE)
-        # img = p.read_image(image_path)
+        cfg = ModelConfig(ModelCategory.IMAGE_FEATURE_EXTRACT, 
+                                         model_path=None,
+                                         cfg_path=None).get_cfg()
+        p = self.get_instance(ModelCategory.IMAGE_FEATURE_EXTRACT,cfg)
+
         if input_image is None and image_path is not None:
             input_image = Image.open(image_path).convert('RGB')
             input_image = pil_image_handler(input_image)
@@ -207,10 +177,11 @@ class ModelFactory:
         """
         Perform classification on an image using Detectron2.
         """
-
-        p = InferenceBase(self.classification_cfg,thresh_hold=0.5)
-        print(self.classification_cfg.MODEL.WEIGHTS,self.classification_cfg.TASK_TYPE)
-        # img = p.read_image(image_path)
+        cfg = ModelConfig(ModelCategory.IMAGE_CLASSIFICATION, 
+                                         model_path=None,
+                                         cfg_path=None).get_cfg()
+        
+        p = self.get_instance(ModelCategory.IMAGE_CLASSIFICATION,cfg)
         if input_image is None and image_path is not None:
             input_image = Image.open(image_path).convert('RGB')
             input_image = pil_image_handler(input_image)
@@ -223,8 +194,11 @@ class ModelFactory:
         """
         Perform on step object detection on an image using Detectron2.
         """
-        p = InferenceBase(self.onstep_detection_cfg,thresh_hold=confidence_threshold)
-        print(self.onstep_detection_cfg)
+        
+        cfg = ModelConfig(ModelCategory.ONE_STEP_OBJECT_DETECTION, 
+                                         model_path="COCO-Detection/retinanet_R_101_FPN_3x.yaml",
+                                         cfg_path="../configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml").get_cfg()
+        p = self.get_instance(ModelCategory.ONE_STEP_OBJECT_DETECTION,cfg)
 
         if input_image is None and image_path is not None:
             input_image = p.read_image(image_path)
@@ -238,8 +212,10 @@ class ModelFactory:
         """
         Perform object detection on an image using Detectron2.
         """
-        p = InferenceBase(self.detection_cfg,thresh_hold=confidence_threshold)
-        print(self.detection_cfg)
+        cfg = ModelConfig(ModelCategory.OBJECT_DETECTION, 
+                                         model_path="COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml",
+                                         cfg_path="../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml").get_cfg()
+        p = self.get_instance(ModelCategory.IMAGE_FEATURE_EXTRACT, cfg)
         if input_image is None and image_path is not None:
             input_image = p.read_image(image_path)
         else:
@@ -252,7 +228,10 @@ class ModelFactory:
         """
         Perform instance segmentation on an image using Detectron2.
         """
-        p = InferenceBase(self.instance_segment_cfg)
+        cfg = ModelConfig(ModelCategory.INSTANCE_SEGMENTATION, 
+                                         model_path="COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml",
+                                         cfg_path="../configs/COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml").get_cfg()
+        p = self.get_instance(ModelCategory.INSTANCE_SEGMENTATION,cfg)
         if input_image is None and image_path is not None:
             input_image = p.read_image(image_path)
         else:
@@ -265,10 +244,13 @@ class ModelFactory:
         """
         Perform instance segmentation on an image using Detectron2.
         """
+
+        cfg = ModelConfig(ModelCategory.SEMANTIC_SEGMENTATION, 
+                                         model_path=None,
+                                         cfg_path="../configs/PascalVOC-Detection/faster_rcnn_R_50_FPN.yaml").get_cfg()
     
-        p = InferenceBase(self.semantic_segment_cfg,thresh_hold=0.5)
-        print(self.semantic_segment_cfg.DATASETS.TEST[0])
-        # img = p.read_image(image_path)
+        p = self.get_instance(ModelCategory.SEMANTIC_SEGMENTATION,cfg)
+
         if input_image is None and image_path is not None:
             input_image = Image.open(image_path).convert('RGB')
             input_image = pil_image_handler(input_image)
@@ -280,7 +262,11 @@ class ModelFactory:
         """
         Perform panoptic segmentation on an image using Detectron2.
         """
-        p = InferenceBase(self.panoptic_segment_cfg)
+
+        cfg = ModelConfig(ModelCategory.INSTANCE_SEGMENTATION, 
+                                         model_path="COCO-PanopticSegmentation/panoptic_fpn_R_101_3x.yaml",
+                                         cfg_path="../configs/COCO-PanopticSegmentation/panoptic_fpn_R_101_3x.yaml").get_cfg()
+        p = self.get_instance(ModelCategory.INSTANCE_SEGMENTATION,cfg)
         if input_image is None and image_path is not None:
             input_image = p.read_image(image_path)
         else:
@@ -294,9 +280,11 @@ class ModelFactory:
         """
         Perform keypoint on an image using Detectron2.
         """
-        p = InferenceBase(self.keypoints_cfg)
-        print(self.detection_cfg)
 
+        cfg = ModelConfig(ModelCategory.KEYPOINTS, 
+                                         model_path="COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml",
+                                         cfg_path="../configs/COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml").get_cfg()
+        p = self.get_instance(ModelCategory.KEYPOINTS,cfg)
         if input_image is None and image_path is not None:
             input_image = p.read_image(image_path)
         else:
@@ -307,9 +295,12 @@ class ModelFactory:
         return outputs,vis_output
     
     def yolo(self, input_image=None,image_path: str="./test/test.png"):
-        p = InferenceBase(self.yolo_cfg,thresh_hold=0.5)
-        # print(self.yolo_cfg.DATASETS.TEST[0])
-        # img = p.read_image(image_path)
+
+        cfg = ModelConfig(ModelCategory.YOLO, 
+                                         model_path=None,
+                                         cfg_path=None).get_cfg()
+        
+        p = self.get_instance(ModelCategory.YOLO,cfg)
         if input_image is None and image_path is not None:
             input_image = Image.open(image_path).convert('RGB')
             input_image = pil_image_handler(input_image)
@@ -319,10 +310,10 @@ class ModelFactory:
 
         
         
-if __name__ == "__main__":
-    f = ModelFactory()
-    # f.prepare_meta()
-    out = f.yolo()
-    print(out)
+# if __name__ == "__main__":
+#     f = ModelFactory()
+#     # f.prepare_meta()
+#     out = f.yolo()
+#     print(out)
 
     

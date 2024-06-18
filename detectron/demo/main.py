@@ -1,7 +1,7 @@
 import json
 from functools import partial
 from pathlib import Path
-
+import time
 import gradio as gr
 from PIL import Image
 import torch
@@ -110,7 +110,27 @@ def create_ui():
                     with gr.Group():
                         components["sam_output"] = gr.Gallery(elem_id='sam_output',label='输出',columns=1,interactive=False)
 
-        # with gr.Tab("OCR"):  
+        with gr.Tab("RAG"):
+            with gr.Row():
+                with gr.Column(scale=1):
+                    with gr.Group():
+                        components["file_upload"] = gr.File(elem_id='doc-input',label='文档上传',file_types=[".pdf",".doc",'.docx','.json','.csv'])
+                        components["db_view"] = gr.Dataframe(
+                                                    headers=["name", "age", "gender"],
+                                                    datatype=["str", "number", "str"],
+                                                    row_count=5,
+                                                    col_count=(3, "fixed"),
+                                                )
+                with gr.Column(scale=3):
+                    with gr.Group():
+                        components["chatbot"] = gr.Chatbot(
+                                            [(None,"What can I help you?")],
+                                            elem_id="chatbot",
+                                            bubble_full_width=False,
+                                            height=800
+                        )
+                        components["chat_input"] = gr.MultimodalTextbox(interactive=True, file_types=["image"], placeholder="Enter message or upload file...", show_label=False)
+
 
         create_event_handlers()
     return demo
@@ -153,6 +173,16 @@ def create_event_handlers():
     components["sam_submit_btn"].click(
         do_sam_everything,gradio('sam_input'),gradio("sam_output")
     )
+
+    components["chat_input"].submit(
+        do_llm_request, gradio("chatbot", "chat_input"), gradio("chatbot", "chat_input")
+    ).then(
+        do_llm_response, gradio("chatbot"), gradio("chatbot"), api_name="bot_response"
+    ).then(
+        lambda: gr.MultimodalTextbox(interactive=True), None, gradio('chat_input')
+    )
+
+    components["chatbot"].like(print_like_dislike, None, None)
 
 def do_refernce(algo_type,input_image):
 # def do_refernce():
@@ -240,7 +270,41 @@ def point_to_mask(pil_image):
     points_array_reshaped = points_array.reshape(-1, 2)
     return points_array_reshaped
 
+def print_like_dislike(x: gr.LikeData):
+    print(x.index, x.value, x.liked)
+
+def do_llm_request(history, message):
+    for x in message["files"]:
+        history.append(((x,), None))
+    if message["text"] is not None:
+        history.append((message["text"], None))
+    return history, gr.MultimodalTextbox(value=None, interactive=False)
+
+def do_llm_response(history):
+    response = llm(history[-1][0])
+    history[-1][1] = ""
+    for character in response:
+        history[-1][1] += character
+        time.sleep(0.01)
+        yield history
+
+def llm(input):
+    import requests
+    API_URL = "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct"
+    headers = {"Authorization": "Bearer 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"}
+
+    def query(payload):
+        response = requests.post(API_URL, headers=headers, json=payload)
+        return response.json()
+        
+    output = query({
+        "inputs": input,
+    })
+    print(output)
+    if len(output) >0:
+        return output[0]['generated_text']
+    return ""
+
 if __name__ == "__main__":
     demo = create_ui()
-    # demo.launch(server_name="10.151.124.137")
     demo.launch()

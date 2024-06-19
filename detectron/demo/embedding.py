@@ -4,14 +4,15 @@ from typing import Any, List, Mapping, Optional,Union
 from langchain.callbacks.manager import (
     CallbackManagerForLLMRun
 )
-from pydantic import  Field
 from langchain_core.embeddings import Embeddings
+import torch
 
 class Embedding(Embeddings):
 
     def __init__(self,**kwargs):
         self.model=AutoModel.from_pretrained('BAAI/bge-small-zh-v1.5')
         self.tokenizer = AutoTokenizer.from_pretrained('BAAI/bge-small-zh-v1.5')
+        self.model.eval()
        
     @property
     def _llm_type(self) -> str:
@@ -23,31 +24,21 @@ class Embedding(Embeddings):
     
     def _call(
         self,
-        prompt: Union[str,List[str]],
+        prompt: List[str],
         stop: Optional[List[str]] = None,
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
-        batch_data = self.tokenizer(
-                text=prompt,
-                padding="longest",
-                return_tensors="pt",
-                max_length=1024,
-                truncation=True,
-        )
+        encoded_input = self.tokenizer(prompt, padding=True, truncation=True, return_tensors='pt')
 
-        attention_mask = batch_data["attention_mask"]
-        # batch_data.to('cuda')
-        model_output = self.model(**batch_data)
-        # model_output = model_output.cpu()
-        last_hidden = model_output.last_hidden_state.masked_fill(~attention_mask[..., None].bool(), 0.0)
-        vectors = last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
-        
-        vectors = vectors.detach().numpy()
-        # 对每行的向量进行归一化
-        vectors = normalize(vectors, norm="l2", axis=1)
-        print("_call",vectors.shape) 
-        return vectors
+        with torch.no_grad():
+            model_output = self.model(**encoded_input)
+            # Perform pooling. In this case, cls pooling.
+            sentence_embeddings = model_output[0][:, 0]
+            print(sentence_embeddings.shape)
+        # normalize embeddings
+        sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
+        return sentence_embeddings.numpy()
 
     @property
     def _identifying_params(self) -> Mapping[str, Any]:
@@ -65,12 +56,13 @@ class Embedding(Embeddings):
     
     def embed_query(self, text) -> List[float]:
         # Embed a single query
-        embedding = self._call(text)
+        embedding = self._call([text])
         return embedding[0]
     
 
-if __name__ == '__main__':
-    sd = Embedding()
-    v1 = sd.embed_query("他是一个人")
-    v2 = sd.embed_query("她是一条狗")
-    print(v1 @ v2.T)
+# if __name__ == '__main__':
+#     sd = Embedding()
+#     v1 = sd.embed_query("他是一个人")
+#     v2 = sd.embed_query("他是一个好人")
+#     v3 = sd.embed_documents(["她是一条狗","他是一个人"])
+#     print(v1 @ v2.T)

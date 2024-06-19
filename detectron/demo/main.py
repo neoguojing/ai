@@ -120,6 +120,7 @@ def create_ui():
                                                     datatype=["str", "str"],
                                                     row_count=2,
                                                     col_count=(2, "fixed"),
+                                                    interactive=False
                                                 )
                 with gr.Column(scale=3):
                     with gr.Group():
@@ -185,11 +186,7 @@ def create_event_handlers():
     components["chatbot"].like(print_like_dislike, None, None)
 
     components['file_upload'].upload(
-        file_handler, gradio('file_upload'), None, show_progress=False
-    )
-
-    components['db_view'].upload(
-        file_handler, gradio('db_view'), None
+        file_handler, gradio('file_upload'),  gradio('db_view'), show_progress=False
     )
 
 def do_refernce(algo_type,input_image):
@@ -313,7 +310,7 @@ def llm(input):
         return output[0]['generated_text']
     return ""
 
-def file_handler(file_objs,state, regenerate=False, _continue=False):
+def file_handler(file_objs):
     import shutil
     import os
     from retriever import Retriever

@@ -50,7 +50,7 @@ class KnowledgeBaseManager:
     def add_documents_to_kb(self, name: str, file_paths: List[str]):
         if name not in self.knowledge_bases:
             print(f"Knowledge base '{name}' does not exist.")
-            return
+            self.create_knowledge_base(name)
         
         kb = self.knowledge_bases[name]
         documents = self.load_documents(file_paths)

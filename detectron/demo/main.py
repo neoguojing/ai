@@ -111,26 +111,34 @@ def create_ui():
                         components["sam_output"] = gr.Gallery(elem_id='sam_output',label='输出',columns=1,interactive=False)
 
         with gr.Tab("RAG"):
-            with gr.Row():
-                with gr.Column(scale=1):
-                    with gr.Group():
-                        components["file_upload"] = gr.File(elem_id='doc-input',label='文档上传',file_types=[".pdf",".doc",'.docx','.json','.csv'])
-                        components["db_view"] = gr.Dataframe(
-                                                    headers=["name", "id"],
-                                                    datatype=["str", "str"],
-                                                    row_count=2,
-                                                    col_count=(2, "fixed"),
-                                                    interactive=False
-                                                )
-                with gr.Column(scale=3):
-                    with gr.Group():
-                        components["chatbot"] = gr.Chatbot(
-                                            [(None,"What can I help you?")],
-                                            elem_id="chatbot",
-                                            bubble_full_width=False,
-                                            height=800
-                        )
-                        components["chat_input"] = gr.MultimodalTextbox(interactive=True, file_types=["image"], placeholder="Enter message or upload file...", show_label=False)
+            with gr.Tab("知识库"):
+                with gr.Row():
+                    with gr.Column():
+                        with gr.Group():
+                            components["db_name"] = gr.Textbox(label="名称",info="请输入库名称",lines=1,value="",),
+                            components["file_upload"] = gr.File(elem_id='doc-input',label='文档上传',file_types=[".pdf",".doc",'.docx','.json','.csv'])
+                            components["db_submit_btn"] = gr.Button(value="提交")
+                    with gr.Column():
+                        with gr.Group():
+                            components["db_view"] = gr.Dataframe(
+                                                        headers=["name", "id"],
+                                                        datatype=["str", "str"],
+                                                        row_count=2,
+                                                        col_count=(2, "fixed"),
+                                                        interactive=False
+                            )
+            with gr.Tab("问答"):
+                with gr.Row():
+                    with gr.Column(scale=3):
+                        with gr.Group():
+                            components["chatbot"] = gr.Chatbot(
+                                                [(None,"What can I help you?")],
+                                                elem_id="chatbot",
+                                                bubble_full_width=False,
+                                                height=600
+                            )
+                            components["chat_input"] = gr.MultimodalTextbox(interactive=True, file_types=["image"], placeholder="Enter message or upload file...", show_label=False)
+                            components["db_select"] = gr.Radio([], label="知识库", info="可选择1个或多个知识库"),
 
 
         create_event_handlers()
@@ -163,14 +171,6 @@ def create_event_handlers():
         do_face_refernce,gradio('face_type','face_input'),gradio("face_output",'face_image_output')
     )
 
-    # components["sam_input"].upload(
-    #     do_sam_everything,gradio('sam_input'),gradio("sam_output")
-    # )
-
-    # components["sam_input"].change(
-    #     do_sam_everything,gradio('sam_input'),gradio("sam_output")
-    # )
-
     components["sam_submit_btn"].click(
         do_sam_everything,gradio('sam_input'),gradio("sam_output")
     )
@@ -185,12 +185,19 @@ def create_event_handlers():
 
     components["chatbot"].like(print_like_dislike, None, None)
 
-    components['file_upload'].upload(
+    components['db_submit_btn'].click(
         file_handler, gradio('file_upload'),  gradio('db_view'), show_progress=False
     )
 
+    # components['db_view'].change(
+    #     file_handler, gradio('db_view'), gradio('db_select'), show_progress=False
+    # )
+
+    components['db_select'].select(
+        db_select_handler, gradio('db_select'), None, show_progress=False
+    )
+
 def do_refernce(algo_type,input_image):
-# def do_refernce():
     print("input image",input_image)
     print(algo_type)
 
@@ -286,7 +293,10 @@ def do_llm_request(history, message):
     return history, gr.MultimodalTextbox(value=None, interactive=False)
 
 def do_llm_response(history):
-    response = llm(history[-1][0])
+    user_input = history[-1][0]
+    context = knowledgeBase.retrieve_documents(selected_dbs,user_input)
+    print("do_llm_response context",context)
+    response = llm(user_input)
     history[-1][1] = ""
     for character in response:
         history[-1][1] += character
@@ -310,18 +320,26 @@ def llm(input):
         return output[0]['generated_text']
     return ""
 
-def file_handler(file_objs):
+from retriever import KnowledgeBaseManager
+knowledgeBase = KnowledgeBaseManager()
+
+def file_handler(file_objs,name):
     import shutil
     import os
-    from retriever import Retriever
+    
     print("file_obj:",type(file_objs))
-    task = Retriever()
+    
 
     os.makedirs(os.path.dirname("./files/input/"), exist_ok=True)
     for idx, file in enumerate(file_objs):
         shutil.move(file.name,"./files/input/")
         file_path = "./files/input/" +  os.path.basename(file.name)
-        task.run(file_path)
+        knowledgeBase.add_documents_to_kb(name,file_path)
+
+selected_dbs = None
+def db_select_handler(seleted):
+    print(seleted)
+    selected_dbs = seleted
 
 if __name__ == "__main__":
     demo = create_ui()

@@ -116,10 +116,10 @@ def create_ui():
                     with gr.Group():
                         components["file_upload"] = gr.File(elem_id='doc-input',label='文档上传',file_types=[".pdf",".doc",'.docx','.json','.csv'])
                         components["db_view"] = gr.Dataframe(
-                                                    headers=["name", "age", "gender"],
-                                                    datatype=["str", "number", "str"],
-                                                    row_count=5,
-                                                    col_count=(3, "fixed"),
+                                                    headers=["name", "id"],
+                                                    datatype=["str", "str"],
+                                                    row_count=2,
+                                                    col_count=(2, "fixed"),
                                                 )
                 with gr.Column(scale=3):
                     with gr.Group():
@@ -183,6 +183,14 @@ def create_event_handlers():
     )
 
     components["chatbot"].like(print_like_dislike, None, None)
+
+    components['file_upload'].upload(
+        file_handler, gradio('file_upload'), None, show_progress=False
+    )
+
+    components['db_view'].upload(
+        file_handler, gradio('db_view'), None
+    )
 
 def do_refernce(algo_type,input_image):
 # def do_refernce():
@@ -304,6 +312,19 @@ def llm(input):
     if len(output) >0:
         return output[0]['generated_text']
     return ""
+
+def file_handler(file_objs,state, regenerate=False, _continue=False):
+    import shutil
+    import os
+    from retriever import Retriever
+    print("file_obj:",type(file_objs))
+    task = Retriever()
+
+    os.makedirs(os.path.dirname("./files/input/"), exist_ok=True)
+    for idx, file in enumerate(file_objs):
+        shutil.move(file.name,"./files/input/")
+        file_path = "./files/input/" +  os.path.basename(file.name)
+        task.run(file_path)
 
 if __name__ == "__main__":
     demo = create_ui()

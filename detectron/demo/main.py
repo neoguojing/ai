@@ -311,10 +311,26 @@ def do_llm_request(history, message):
 
 def do_llm_response(history,selected_dbs):
     user_input = history[-1][0]
-    context = knowledgeBase.retrieve_documents(selected_dbs,user_input)
-    print("do_llm_response context",context)
-    response = llm(user_input)
+    knowledge = knowledgeBase.retrieve_documents(selected_dbs,user_input)
+    print("do_llm_response context:",knowledge)
+    prompt = f'''
+背景1：{knowledge[0]["content"]}
+背景2：{knowledge[1]["content"]}
+背景3：{knowledge[2]["content"]}
+基于以上事实回答问题：{user_input}
+    '''
+    
+
+    print("do_llm_response prompt:",prompt)
+    response = llm(prompt)
     history[-1][1] = ""
+
+    response = response.removeprefix(prompt)
+    response += f'''
+> 文档：{knowledge[0]["meta"]["source"]}，页码：{knowledge[0]["meta"]["page"]}
+> 文档：{knowledge[1]["meta"]["source"]}，页码：{knowledge[1]["meta"]["page"]}
+> 文档：{knowledge[2]["meta"]["source"]}，页码：{knowledge[2]["meta"]["page"]}
+'''
     for character in response:
         history[-1][1] += character
         time.sleep(0.01)
@@ -322,7 +338,7 @@ def do_llm_response(history,selected_dbs):
 
 def llm(input):
     import requests
-    API_URL = "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct"
+    API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
     headers = {"Authorization": "Bearer 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"}
 
     def query(payload):

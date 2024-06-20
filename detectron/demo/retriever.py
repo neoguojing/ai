@@ -133,7 +133,7 @@ class KnowledgeBaseManager:
                 search_kwargs={"score_threshold": 0.5, "k": 3}
             )
             docs = retriever.get_relevant_documents(query)
-            results.extend([{"name": name, "content": doc.page_content,"page": doc.metadata} for doc in docs])
+            results.extend([{"name": name, "content": doc.page_content,"meta": doc.metadata} for doc in docs])
             
         
         return results

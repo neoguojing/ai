@@ -131,9 +131,7 @@ def create_ui():
                     components["db_input"] = gr.Textbox(label="关键词", lines=1, value="")
                     
                 with gr.Column(scale=1):
-                    components["db_test_select"] = gr.Dropdown(
-                                        knowledgeBase.get_bases(),multiselect=True, label="知识库选择"
-                    )
+                    components["db_test_select"] = gr.Dropdown(knowledgeBase.get_bases(),multiselect=True, label="知识库选择")
                     components["dbtest_submit_btn"] = gr.Button(value="检索")
             with gr.Row():
                 with gr.Group():
@@ -193,7 +191,7 @@ def create_event_handlers():
     )
 
     components["db_submit_btn"].click(
-        file_handler,gradio('file_upload','db_name'),gradio("db_view",'db_select')
+        file_handler,gradio('file_upload','db_name'),gradio("db_view",'db_select','db_test_select')
     )
 
     components["chat_input"].submit(
@@ -373,7 +371,7 @@ def file_handler(file_objs,name):
 
     dbs = knowledgeBase.get_bases()
     dfs = knowledgeBase.get_df_bases()
-    return dfs,dbs
+    return dfs,gr.CheckboxGroup(dbs,label="知识库", info="可选择1个或多个知识库"),gr.Dropdown(dbs,multiselect=True, label="知识库选择")
 
 def do_search(selected_dbs,user_input):
     print("do_search:",selected_dbs,user_input)

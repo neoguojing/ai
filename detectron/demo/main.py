@@ -13,6 +13,7 @@ sys.path.append("..")
 from inference import ModelFactory
 from face import FaceAlgo
 from sam_everything import SamAnything
+from retriever import knowledgeBase
 
 
 components = {}
@@ -104,42 +105,53 @@ def create_ui():
             with gr.Row():
                 with gr.Column(scale=2):
                     with gr.Group():
-                        # components["sam_input"] = gr.ImageEditor(elem_id='sam-input',label='输入',type="pil")
                         components["sam_input"] = ImagePrompter(elem_id='sam-input',label='输入',type="pil")
                 with gr.Column(scale=2):
                     with gr.Group():
                         components["sam_output"] = gr.Gallery(elem_id='sam_output',label='输出',columns=1,interactive=False)
 
-        with gr.Tab("RAG"):
-            with gr.Tab("知识库"):
-                with gr.Row():
-                    with gr.Column():
+        with gr.Tab("知识库"):
+            with gr.Row():
+                with gr.Column(scale=1):
+                    with gr.Group():
+                        components["db_view"] = gr.Dataframe(
+                                                    knowledgeBase.get_df_bases(),
+                                                    headers=["列表"],
+                                                    datatype=["str"],
+                                                    row_count=2,
+                                                    col_count=(1, "fixed"),
+                                                    interactive=False
+                        )
+                with gr.Column(scale=2):
                         with gr.Group():
-                            components["db_name"] = gr.Textbox(label="名称",info="请输入库名称",lines=1,value="",),
-                            components["file_upload"] = gr.File(elem_id='doc-input',label='文档上传',file_types=[".pdf",".doc",'.docx','.json','.csv'])
+                            components["db_name"] = gr.Textbox(label="名称", info="请输入库名称", lines=1, value="")
+                            components["file_upload"] = gr.File(elem_id='file_upload',file_count='multiple',label='文档上传', file_types=[".pdf", ".doc", '.docx', '.json', '.csv'])
                             components["db_submit_btn"] = gr.Button(value="提交")
-                    with gr.Column():
-                        with gr.Group():
-                            components["db_view"] = gr.Dataframe(
-                                                        headers=["name", "id"],
-                                                        datatype=["str", "str"],
-                                                        row_count=2,
-                                                        col_count=(2, "fixed"),
-                                                        interactive=False
-                            )
-            with gr.Tab("问答"):
-                with gr.Row():
-                    with gr.Column(scale=3):
-                        with gr.Group():
-                            components["chatbot"] = gr.Chatbot(
-                                                [(None,"What can I help you?")],
-                                                elem_id="chatbot",
-                                                bubble_full_width=False,
-                                                height=600
-                            )
-                            components["chat_input"] = gr.MultimodalTextbox(interactive=True, file_types=["image"], placeholder="Enter message or upload file...", show_label=False)
-                            components["db_select"] = gr.Radio([], label="知识库", info="可选择1个或多个知识库"),
+            with gr.Row():
+                with gr.Column(scale=2):
+                    components["db_input"] = gr.Textbox(label="关键词", lines=1, value="")
+                    
+                with gr.Column(scale=1):
+                    components["db_test_select"] = gr.Dropdown(
+                                           knowledgeBase.get_bases(), value=[], multiselect=True, label="知识库选择"
+                    )
+                    components["dbtest_submit_btn"] = gr.Button(value="检索")
+            with gr.Row():
+                with gr.Group():
+                    components["db_search_result"] = gr.JSON(label="检索结果")
 
+        with gr.Tab("问答"):
+            with gr.Row():
+                with gr.Column():
+                    with gr.Group():
+                        components["chatbot"] = gr.Chatbot(
+                                            [(None,"What can I help you?")],
+                                            elem_id="chatbot",
+                                            bubble_full_width=False,
+                                            height=600
+                            )
+                        components["chat_input"] = gr.MultimodalTextbox(interactive=True, file_types=["image"], placeholder="Enter message or upload file...", show_label=False)
+                        components["db_select"] = gr.CheckboxGroup(knowledgeBase.get_bases(),label="知识库", info="可选择1个或多个知识库")
 
         create_event_handlers()
     return demo
@@ -175,27 +187,27 @@ def create_event_handlers():
         do_sam_everything,gradio('sam_input'),gradio("sam_output")
     )
 
+    components["db_submit_btn"].click(
+        file_handler,gradio('file_upload','db_name'),gradio("db_view",'db_select')
+    )
+
     components["chat_input"].submit(
         do_llm_request, gradio("chatbot", "chat_input"), gradio("chatbot", "chat_input")
     ).then(
-        do_llm_response, gradio("chatbot"), gradio("chatbot"), api_name="bot_response"
+        do_llm_response, gradio("chatbot","db_select"), gradio("chatbot"), api_name="bot_response"
     ).then(
         lambda: gr.MultimodalTextbox(interactive=True), None, gradio('chat_input')
     )
 
-    components["chatbot"].like(print_like_dislike, None, None)
+    # components["chatbot"].like(print_like_dislike, None, None)
 
-    components['db_submit_btn'].click(
-        file_handler, gradio('file_upload'),  gradio('db_view'), show_progress=False
+    components['dbtest_submit_btn'].click(
+        do_search, gradio('db_test_select','db_input'), gradio('db_search_result')
     )
 
-    # components['db_view'].change(
-    #     file_handler, gradio('db_view'), gradio('db_select'), show_progress=False
+    # components['db_select'].select(
+    #     db_select_handler, gradio('db_select'), None, show_progress=False
     # )
-
-    components['db_select'].select(
-        db_select_handler, gradio('db_select'), None, show_progress=False
-    )
 
 def do_refernce(algo_type,input_image):
     print("input image",input_image)
@@ -292,7 +304,7 @@ def do_llm_request(history, message):
         history.append((message["text"], None))
     return history, gr.MultimodalTextbox(value=None, interactive=False)
 
-def do_llm_response(history):
+def do_llm_response(history,selected_dbs):
     user_input = history[-1][0]
     context = knowledgeBase.retrieve_documents(selected_dbs,user_input)
     print("do_llm_response context",context)
@@ -320,26 +332,34 @@ def llm(input):
         return output[0]['generated_text']
     return ""
 
-from retriever import KnowledgeBaseManager
-knowledgeBase = KnowledgeBaseManager()
+
 
 def file_handler(file_objs,name):
     import shutil
     import os
     
-    print("file_obj:",type(file_objs))
+    print("file_obj:",file_objs)
     
-
     os.makedirs(os.path.dirname("./files/input/"), exist_ok=True)
-    for idx, file in enumerate(file_objs):
-        shutil.move(file.name,"./files/input/")
-        file_path = "./files/input/" +  os.path.basename(file.name)
-        knowledgeBase.add_documents_to_kb(name,file_path)
 
-selected_dbs = None
-def db_select_handler(seleted):
-    print(seleted)
-    selected_dbs = seleted
+    for idx, file in enumerate(file_objs):
+        print(file)
+        file_path = "./files/input/" +  os.path.basename(file.name)
+        if not os.path.exists(file_path):
+            shutil.move(file.name,"./files/input/")
+        
+        ids = knowledgeBase.add_documents_to_kb(name,[file_path])
+        print(ids)
+
+    dbs = knowledgeBase.get_bases()
+    dfs = knowledgeBase.get_df_bases()
+    return dfs,dbs
+
+def do_search(selected_dbs,user_input):
+    print("do_search:",selected_dbs,user_input)
+    context = knowledgeBase.retrieve_documents(selected_dbs,user_input)
+    return context
+
 
 if __name__ == "__main__":
     demo = create_ui()

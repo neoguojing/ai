@@ -52,3 +52,6 @@ _darcs
 /models
 /snippet
 yolov8n.pt
+
+detectron/demo/files/*
+detectron/demo/knowledge_bases/*

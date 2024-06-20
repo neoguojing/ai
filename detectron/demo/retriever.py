@@ -4,6 +4,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.docstore.in_memory import InMemoryDocstore
 import faiss
 import os
+import glob
 from typing import Any,List,Dict
 from embedding import Embedding
 
@@ -17,9 +18,20 @@ class KnowledgeBaseManager:
         self.knowledge_bases: Dict[str, FAISS] = {}
         os.makedirs(self.base_path, exist_ok=True)
 
+        faiss_files = glob.glob(os.path.join(base_path, '*.faiss'))
+        # 获取不带后缀的名称
+        file_names_without_extension = [os.path.splitext(os.path.basename(file))[0] for file in faiss_files]
+        for name in file_names_without_extension:
+            self.load_knowledge_base(name)
+
+
     def create_knowledge_base(self, name: str):
         index = faiss.IndexFlatL2(self.embedding_dim)
         kb = FAISS(self.embeddings, index, InMemoryDocstore(), {})
+        if name in self.knowledge_bases:
+            print(f"Knowledge base '{name}' already exists.")
+            return
+        
         self.knowledge_bases[name] = kb
         self.save_knowledge_base(name)
         print(f"Knowledge base '{name}' created.")
@@ -47,6 +59,13 @@ class KnowledgeBaseManager:
         else:
             print(f"Knowledge base '{name}' does not exist.")
 
+    # Document(page_content = '渠道版', metadata = {
+	# 'source': './files/input/SenseNebula AIS_商汤星云智能服务器 神威系列 渠道版_产品规格书_V1.0.0_01_CN_ST-SMB-PS004.pdf',
+	# 'page': 0
+    # }), Document(page_content = '2/20  SenseNebula  AIS SW 渠道版  \n \n1. \n  ................................ ................................ ................................ ................................ ... 6 \n1.1. \n  ................................ ................................ ................................ ................................  6 \n1.1.1.  \n  ................................ ................................ ................................ ................................ .................  6 \n1.2.', metadata = {
+    #     'source': './files/input/SenseNebula AIS_商汤星云智能服务器 神威系列 渠道版_产品规格书_V1.0.0_01_CN_ST-SMB-PS004.pdf',
+    #     'page': 1
+    # })
     def add_documents_to_kb(self, name: str, file_paths: List[str]):
         if name not in self.knowledge_bases:
             print(f"Knowledge base '{name}' does not exist.")
@@ -55,15 +74,18 @@ class KnowledgeBaseManager:
         kb = self.knowledge_bases[name]
         documents = self.load_documents(file_paths)
         print(f"Loaded {len(documents)} documents.")
-        
+        print(documents)
         pages = self.split_documents(documents)
         print(f"Split documents into {len(pages)} pages.")
+        # print(pages)
         
+        doc_ids = []
         for i in range(0, len(pages), self.batch_size):
             batch = pages[i:i+self.batch_size]
-            kb.add_documents(batch)
+            doc_ids.extend(kb.add_documents(batch))
         
         self.save_knowledge_base(name)
+        return doc_ids
 
     def load_documents(self, file_paths: List[str]):
         documents = []
@@ -95,83 +117,21 @@ class KnowledgeBaseManager:
             
             retriever = self.knowledge_bases[name].as_retriever(
                 search_type="mmr",
-                search_kwargs={"score_threshold": 0.5, "k": 1}
+                search_kwargs={"score_threshold": 0.5, "k": 3}
             )
             docs = retriever.get_relevant_documents(query)
-            results.extend([{"name": name, "content": doc.page_content} for doc in docs])
+            results.extend([{"name": name, "content": doc.page_content,"page": doc.metadata} for doc in docs])
+            
         
         return results
-
-class Retriever():
-    index_path = "./"
-    index_name = "default"
-    batch_size = 16
-    def __init__(self):
-        self.embeddings = Embedding()
-        if os.path.exists(self.index_path+self.index_name+".faiss"):
-             print("load faiss from local index ")
-             self.vector_store = FAISS.load_local(self.index_path, self.embeddings,self.index_name,allow_dangerous_deserialization=True)
-             
-        else:
-            index = faiss.IndexFlatL2(512)
-            self.vector_store = FAISS(self.embeddings,index,InMemoryDocstore(),{})
-            self.vector_store.save_local(self.index_path,self.index_name)
-        
-        self.retriever = self.vector_store.as_retriever(
-            search_type="mmr",
-            search_kwargs={"score_threshold": 0.5,"k": 1}
-            )
-
-    def load_documents(self, file_paths):
-        documents = []
-
-        if not isinstance(file_paths, list):
-            file_paths = [file_paths]
-
-        for file_path in file_paths:
-            if file_path.endswith('.txt'):
-                self.loader = TextLoader(file_path)
-            elif file_path.endswith('.json'):
-                self.loader = JSONLoader(file_path)
-            elif file_path.endswith('.pdf'):
-                self.loader = PyPDFLoader(file_path)
-            else:
-                raise ValueError("Unsupported file format")
-            documents.extend(self.loader.load())
-        return documents
-
-    def split_documents(self, documents):
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
-        return text_splitter.split_documents(documents)
-
-    def build_vector_store(self, docs):
-        self.vector_store.add_documents(docs)
-
-    def retrieve_documents(self, query):
-        docs = self.retriever.get_relevant_documents(query)
-        return [doc.page_content for doc in docs]
     
-    def run(self, input: Any,**kwargs):
-        if input is None or input == "":
-            return 
-        
-        docs = self.load_documents(input)
-        print("load_documents:",len(docs))
-        pages = self.split_documents(docs)
-        print("split_documents:",len(pages))
-        groups = []
-        if len(pages) > self.batch_size:
-            groups = [docs[i:i+self.batch_size] for i in range(0, len(docs), self.batch_size)]
-        else:
-            groups = [pages]
-        print("groups:",len(groups))
-        for g in groups:
-            self.build_vector_store(g)
-
-        self.vector_store.save_local(self.index_path,self.index_name)
-
+    def get_bases(self):
+        data = self.knowledge_bases.keys()
+        return list(data)
     
-    async def arun(self,input: Any=None,**kwargs):
-        return self.run(input,**kwargs)
-    
+    def get_df_bases(self):
+        import pandas as pd
+        data = self.knowledge_bases.keys()
+        return pd.DataFrame(list(data), columns=['列表'])
 
+knowledgeBase = KnowledgeBaseManager()

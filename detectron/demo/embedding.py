@@ -52,6 +52,7 @@ class Embedding(Embeddings):
         embedding = self._call(texts)
         for row in embedding:
             embeddings.append(row)
+        # print("embed_documents: shape",embeddings.shape)
         return embeddings
     
     def embed_query(self, text) -> List[float]:

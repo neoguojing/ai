@@ -60,10 +60,10 @@ class KnowledgeBaseManager:
             print(f"Knowledge base '{name}' does not exist.")
 
     # Document(page_content = '渠道版', metadata = {
-	# 'source': './files/input/SenseNebula AIS_商汤星云智能服务器 神威系列 渠道版_产品规格书_V1.0.0_01_CN_ST-SMB-PS004.pdf',
+	# 'source': './files/input/PS004.pdf',
 	# 'page': 0
-    # }), Document(page_content = '2/20  SenseNebula  AIS SW 渠道版  \n \n1. \n  ................................ ................................ ................................ ................................ ... 6 \n1.1. \n  ................................ ................................ ................................ ................................  6 \n1.1.1.  \n  ................................ ................................ ................................ ................................ .................  6 \n1.2.', metadata = {
-    #     'source': './files/input/SenseNebula AIS_商汤星云智能服务器 神威系列 渠道版_产品规格书_V1.0.0_01_CN_ST-SMB-PS004.pdf',
+    # }), Document(page_content = '2/20.', metadata = {
+    #     'source': './files/input/PS004.pdf',
     #     'page': 1
     # })
     def add_documents_to_kb(self, name: str, file_paths: List[str]):
@@ -105,7 +105,20 @@ class KnowledgeBaseManager:
             raise ValueError("Unsupported file format")
 
     def split_documents(self, documents):
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
+        text_splitter = RecursiveCharacterTextSplitter(separators=[
+                                                    "\n\n",
+                                                    "\n",
+                                                    " ",
+                                                    ".",
+                                                    ",",
+                                                    "\u200b",  # Zero-width space
+                                                    "\uff0c",  # Fullwidth comma
+                                                    "\u3001",  # Ideographic comma
+                                                    "\uff0e",  # Fullwidth full stop
+                                                    "\u3002",  # Ideographic full stop
+                                                    "",
+                                                ],
+                                                chunk_size=512, chunk_overlap=0)
         return text_splitter.split_documents(documents)
 
     def retrieve_documents(self, names: List[str], query: str):

@@ -115,7 +115,6 @@ def create_ui():
                 with gr.Column(scale=1):
                     with gr.Group():
                         components["db_view"] = gr.Dataframe(
-                                                    knowledgeBase.get_df_bases(),
                                                     headers=["列表"],
                                                     datatype=["str"],
                                                     row_count=2,
@@ -133,7 +132,7 @@ def create_ui():
                     
                 with gr.Column(scale=1):
                     components["db_test_select"] = gr.Dropdown(
-                                           knowledgeBase.get_bases(), value=[], multiselect=True, label="知识库选择"
+                                        knowledgeBase.get_bases(),multiselect=True, label="知识库选择"
                     )
                     components["dbtest_submit_btn"] = gr.Button(value="检索")
             with gr.Row():
@@ -154,7 +153,13 @@ def create_ui():
                         components["db_select"] = gr.CheckboxGroup(knowledgeBase.get_bases(),label="知识库", info="可选择1个或多个知识库")
 
         create_event_handlers()
+        demo.load(init,None,gradio("db_view","db_test_select","db_select"))
     return demo
+
+def init():
+    db_list = knowledgeBase.get_bases()
+    db_df_list = knowledgeBase.get_df_bases()
+    return db_df_list,db_list,db_list
 
 
 def create_event_handlers():
@@ -348,8 +353,7 @@ def file_handler(file_objs,name):
         if not os.path.exists(file_path):
             shutil.move(file.name,"./files/input/")
         
-        ids = knowledgeBase.add_documents_to_kb(name,[file_path])
-        print(ids)
+        knowledgeBase.add_documents_to_kb(name,[file_path])
 
     dbs = knowledgeBase.get_bases()
     dfs = knowledgeBase.get_df_bases()

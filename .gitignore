@@ -10,3 +10,6 @@ detectron/demo/files/input/SenseNebula AIS商汤星云智能服务器 神威E系
 detectron/demo/knowledge_bases/规格书.faiss
 detectron/demo/knowledge_bases/说明书.faiss
 detectron/demo/knowledge_bases/说明书2.faiss
+detectron/demo/main.py
+detectron/demo/knowledge_bases/规格书1.faiss
+detectron/demo/knowledge_bases/规格书2.faiss

@@ -139,10 +139,16 @@ def create_ui():
 
         with gr.Tab("问答"):
             with gr.Row():
-                with gr.Column():
+                with gr.Column(scale=1):
+                    with gr.Group():
+                        components["ak"] = gr.Textbox(label="appid")
+                        components["sk"] = gr.Textbox(label="secret")
+                        components["llm_client"] =gr.Radio(["Wenxin", "Tongyi","Huggingface"],value="Wenxin", label="llm")
+                        components["llm_setting_btn"] =  gr.Button(value="设置")
+                with gr.Column(scale=2):
                     with gr.Group():
                         components["chatbot"] = gr.Chatbot(
-                                            [(None,"What can I help you?")],
+                                            [(None,"你好，有什么需要帮助的？")],
                                             elem_id="chatbot",
                                             bubble_full_width=False,
                                             height=600
@@ -151,13 +157,13 @@ def create_ui():
                         components["db_select"] = gr.CheckboxGroup(knowledgeBase.get_bases(),label="知识库", info="可选择1个或多个知识库")
 
         create_event_handlers()
-        demo.load(init,None,gradio("db_view","db_test_select","db_select"))
+        demo.load(init,None,gradio("db_view"))
     return demo
 
 def init():
-    db_list = knowledgeBase.get_bases()
+    # db_list = knowledgeBase.get_bases()
     db_df_list = knowledgeBase.get_df_bases()
-    return db_df_list,db_list,db_list
+    return db_df_list
 
 
 def create_event_handlers():
@@ -211,6 +217,10 @@ def create_event_handlers():
     # components['db_select'].select(
     #     db_select_handler, gradio('db_select'), None, show_progress=False
     # )
+
+    components['llm_setting_btn'].click(
+        llm, gradio('ak','sk','llm_client'), None
+    )
 
 def do_refernce(algo_type,input_image):
     print("input image",input_image)
@@ -301,57 +311,70 @@ def print_like_dislike(x: gr.LikeData):
     print(x.index, x.value, x.liked)
 
 def do_llm_request(history, message):
+    
     for x in message["files"]:
         history.append(((x,), None))
     if message["text"] is not None:
         history.append((message["text"], None))
+    print("do_llm_request:",history,message)
     return history, gr.MultimodalTextbox(value=None, interactive=False)
 
 def do_llm_response(history,selected_dbs):
+    print("do_llm_response:",history,selected_dbs)
     user_input = history[-1][0]
-    knowledge = knowledgeBase.retrieve_documents(selected_dbs,user_input)
-    print("do_llm_response context:",knowledge)
-    prompt = f'''
+    prompt = ""
+    quote = ""
+    if len(selected_dbs) > 0:
+        knowledge = knowledgeBase.retrieve_documents(selected_dbs,user_input)
+        print("do_llm_response context:",knowledge)
+        prompt = f'''
 背景1：{knowledge[0]["content"]}
 背景2：{knowledge[1]["content"]}
 背景3：{knowledge[2]["content"]}
 基于以上事实回答问题：{user_input}
-    '''
-    
+        '''
 
-    print("do_llm_response prompt:",prompt)
-    response = llm(prompt)
-    history[-1][1] = ""
-
-    response = response.removeprefix(prompt)
-    response += f'''
+        quote = f'''
 > 文档：{knowledge[0]["meta"]["source"]}，页码：{knowledge[0]["meta"]["page"]}
 > 文档：{knowledge[1]["meta"]["source"]}，页码：{knowledge[1]["meta"]["page"]}
 > 文档：{knowledge[2]["meta"]["source"]}，页码：{knowledge[2]["meta"]["page"]}
 '''
+    else:
+        prompt = user_input
+    
+    history[-1][1] = ""
+    if llm_client is None:
+        gr.Warning("请先设置大模型")
+        response = "模型参数未设置"
+    else:
+        print("do_llm_response prompt:",prompt)
+        response = llm_client(prompt)
+        response = response.removeprefix(prompt)
+        response += quote
+
     for character in response:
         history[-1][1] += character
         time.sleep(0.01)
         yield history
 
-def llm(input):
-    import requests
-    API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
-    headers = {"Authorization": "Bearer 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"}
+llm_client = None
+def llm(ak,sk,client):
+    global llm_client
+    import llm
+    llm.init_param(ak,sk)
+    if client == "Wenxin":
+        llm_client = llm.baidu_client
+    elif client == "Tongyi":
+        llm_client = llm.qwen_agent_app
+    elif client == "Huggingface":
+        llm_client = llm.hg_client
+    
+    if ak == "" and sk == "":
+        gr.Info("重置成功")
+    else:
+        gr.Info("设置成功")
 
-    def query(payload):
-        response = requests.post(API_URL, headers=headers, json=payload)
-        return response.json()
-        
-    output = query({
-        "inputs": input,
-    })
-    print(output)
-    if len(output) >0:
-        return output[0]['generated_text']
-    return ""
-
-
+    return llm_client
 
 def file_handler(file_objs,name):
     import shutil

@@ -62,6 +62,7 @@ def qwen_agent_app(input):
 
     if response.status_code != HTTPStatus.OK:
         print('request_id=%s, code=%s, message=%s\n' % (response.request_id, response.status_code, response.message))
+        return ""
     else:
         print('request_id=%s\n output=%s\n usage=%s\n' % (response.request_id, response.output, response.usage))
         return response.output["text"]

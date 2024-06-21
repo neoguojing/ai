@@ -122,16 +122,18 @@ def create_ui():
                                                     interactive=False
                         )
                 with gr.Column(scale=2):
-                        with gr.Group():
-                            components["db_name"] = gr.Textbox(label="名称", info="请输入库名称", lines=1, value="")
-                            components["file_upload"] = gr.File(elem_id='file_upload',file_count='multiple',label='文档上传', file_types=[".pdf", ".doc", '.docx', '.json', '.csv'])
-                            components["db_submit_btn"] = gr.Button(value="提交")
+                        with gr.Row():
+                            with gr.Column(scale=2):
+                                components["db_name"] = gr.Textbox(label="名称", info="请输入库名称", lines=1, value="")
+                            with gr.Column(scale=2):
+                                components["db_submit_btn"] = gr.Button(value="提交")
+                        components["file_upload"] = gr.File(elem_id='file_upload',file_count='multiple',label='文档上传', file_types=[".pdf", ".doc", '.docx', '.json', '.csv'])
             with gr.Row():
                 with gr.Column(scale=2):
                     components["db_input"] = gr.Textbox(label="关键词", lines=1, value="")
-                    
                 with gr.Column(scale=1):
                     components["db_test_select"] = gr.Dropdown(knowledgeBase.get_bases(),multiselect=True, label="知识库选择")
+                with gr.Column(scale=1):
                     components["dbtest_submit_btn"] = gr.Button(value="检索")
             with gr.Row():
                 with gr.Group():

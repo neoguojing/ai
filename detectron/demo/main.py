@@ -159,13 +159,13 @@ def create_ui():
                         components["db_select"] = gr.CheckboxGroup(knowledgeBase.get_bases(),label="知识库", info="可选择1个或多个知识库")
 
         create_event_handlers()
-        demo.load(init,None,gradio("db_view"))
+        demo.load(init,None,gradio("db_view","db_select","db_test_select"))
     return demo
 
 def init():
-    # db_list = knowledgeBase.get_bases()
+    db_list = knowledgeBase.get_bases()
     db_df_list = knowledgeBase.get_df_bases()
-    return db_df_list
+    return db_df_list,gr.CheckboxGroup(db_list,label="知识库", info="可选择1个或多个知识库"),gr.Dropdown(db_list,multiselect=True, label="知识库选择")
 
 
 def create_event_handlers():

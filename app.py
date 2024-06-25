@@ -5,6 +5,8 @@ import time
 from pathlib import Path
 from retriever import knowledgeBase
 import llm
+import os
+
 
 current_file_path = Path(__file__).resolve()
 absolute_path = (current_file_path.parent / "files" / "input").resolve()
@@ -153,9 +155,9 @@ def do_llm_response(history,selected_dbs):
         '''
 
         quote = f'''
-> 文档：{knowledge[0]["meta"]["source"]}，页码：{knowledge[0]["meta"]["page"]}
-> 文档：{knowledge[1]["meta"]["source"]}，页码：{knowledge[1]["meta"]["page"]}
-> 文档：{knowledge[2]["meta"]["source"]}，页码：{knowledge[2]["meta"]["page"]}
+> 文档：{os.path.basename(knowledge[0]["meta"]["source"])}，页码：{knowledge[0]["meta"]["page"]}
+> 文档：{os.path.basename(knowledge[1]["meta"]["source"])}，页码：{knowledge[1]["meta"]["page"]}
+> 文档：{os.path.basename(knowledge[2]["meta"]["source"])}，页码：{knowledge[2]["meta"]["page"]}
 '''
     else:
         prompt = user_input

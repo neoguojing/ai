@@ -155,7 +155,7 @@ class KnowledgeBaseManager:
         return results
     
     def get_db_files(self,name):
-        data = self.db_files_map[name]
+        data = self.db_files_map.get(name)
         return data
     
     def get_bases(self):

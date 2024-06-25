@@ -1,7 +1,6 @@
 
 import gradio as gr
 import numpy as np
-from gradio_image_prompter import ImagePrompter
 import time
 from pathlib import Path
 from retriever import knowledgeBase

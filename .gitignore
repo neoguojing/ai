@@ -4,3 +4,5 @@ __pycache__/retriever.cpython-312.pyc
 files/input/SenseNebula AIS产品培训_20220727.pdf
 knowledge_bases/ceshi .faiss
 knowledge_bases/ceshi .pkl
+__pycache__/config.cpython-312.pyc
+__pycache__/llm.cpython-312.pyc

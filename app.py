@@ -28,6 +28,11 @@ def create_ui():
         with gr.Tab("知识库"):
             with gr.Row():
                 with gr.Column(scale=1):
+                    gr.Markdown(
+                                """
+                                ### 已有知识库
+                                > 知识库和其中包含的文档
+                                """)
                     with gr.Group():
                         components["db_view"] = gr.Dataframe(
                                                     headers=["列表"],
@@ -45,12 +50,21 @@ def create_ui():
                             elem_id="file_expr",
                         )
                 with gr.Column(scale=2):
+                    gr.Markdown(
+                            """
+                            ### 新建知识库
+                            """)
                     with gr.Row():
                         with gr.Column(scale=2):
                             components["db_name"] = gr.Textbox(label="名称", info="请输入库名称", lines=1, value="")
                         with gr.Column(scale=2):
                             components["db_submit_btn"] = gr.Button(value="提交")
                     components["file_upload"] = gr.File(elem_id='file_upload',file_count='multiple',label='文档上传', file_types=[".pdf", ".doc", '.docx', '.json', '.csv'])
+            gr.Markdown(
+                        """
+                        ### 知识库检索
+                        > 验证文档是否可被检索
+                        """)
             with gr.Row():
                 with gr.Column(scale=2):
                     components["db_input"] = gr.Textbox(label="关键词", lines=1, value="")
@@ -165,6 +179,13 @@ def file_handler(file_objs,name):
     
     print("file_obj:",file_objs)
     
+    if name == "":
+        gr.Warning("请输入知识库名称！")
+        return
+    
+    if len(file_objs) == 0:
+        gr.Warning("请上传文档！")
+        return
     os.makedirs(os.path.dirname("./files/input/"), exist_ok=True)
 
     for idx, file in enumerate(file_objs):

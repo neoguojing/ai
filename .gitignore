@@ -1,0 +1,6 @@
+db.json
+__pycache__/embedding.cpython-312.pyc
+__pycache__/retriever.cpython-312.pyc
+files/input/SenseNebula AIS产品培训_20220727.pdf
+knowledge_bases/ceshi .faiss
+knowledge_bases/ceshi .pkl

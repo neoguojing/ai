@@ -2,20 +2,9 @@ import requests
 import json
 from http import HTTPStatus
 from dashscope import Application
-
-ak = ""
-sk = ""
-
-def init_param(access_key,secret_key):
-    global ak, sk
-    ak = access_key
-    sk = secret_key
-
+import config
 
 def baidu_client(input):
-    global ak, sk   
-    if ak == "" or sk == "":
-        return ""
     
     url = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-lite-8k?access_token=" + get_access_token()
     
@@ -47,17 +36,14 @@ def get_access_token():
     :return: access_token，或是None(如果错误)
     """
     url = "https://aip.baidubce.com/oauth/2.0/token"
-    params = {"grant_type": "client_credentials", "client_id": ak, "client_secret": sk}
+    params = {"grant_type": "client_credentials", "client_id": config.wenxin_ak, "client_secret": config.wenxin_sk}
     return str(requests.post(url, params=params).json().get("access_token"))
 
 
 def qwen_agent_app(input):
-    global ak, sk   
-    if ak == "" or sk == "":
-        return ""
-    response = Application.call(app_id=ak,
+    response = Application.call(app_id=config.tongyi_ak,
                                 prompt=input,
-                                api_key=sk,
+                                api_key=config.tongyi_sk,
                                 )
 
     if response.status_code != HTTPStatus.OK:
@@ -69,12 +55,10 @@ def qwen_agent_app(input):
     
 
 def hg_client(input):
-    global ak, sk   
-    if sk == "":
-        return ""
+
     import requests
     API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
-    headers = {"Authorization": f"Bearer {sk}"}
+    headers = {"Authorization": f"Bearer {config.hg_token}"}
 
     def query(payload):
         response = requests.post(API_URL, headers=headers, json=payload)

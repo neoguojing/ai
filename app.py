@@ -5,6 +5,7 @@ from gradio_image_prompter import ImagePrompter
 import time
 from pathlib import Path
 from retriever import knowledgeBase
+import llm
 
 current_file_path = Path(__file__).resolve()
 absolute_path = (current_file_path.parent / "files" / "input").resolve()
@@ -64,12 +65,6 @@ def create_ui():
 
         with gr.Tab("问答"):
             with gr.Row():
-                with gr.Column(scale=1):
-                    with gr.Group():
-                        components["ak"] = gr.Textbox(label="appid")
-                        components["sk"] = gr.Textbox(label="secret")
-                        components["llm_client"] =gr.Radio(["Wenxin", "Tongyi","Huggingface"],value="Wenxin", label="llm")
-                        components["llm_setting_btn"] =  gr.Button(value="设置")
                 with gr.Column(scale=2):
                     with gr.Group():
                         components["chatbot"] = gr.Chatbot(
@@ -107,10 +102,6 @@ def create_event_handlers():
 
     components['dbtest_submit_btn'].click(
         do_search, gradio('db_test_select','db_input'), gradio('db_search_result')
-    )
-
-    components['llm_setting_btn'].click(
-        llm, gradio('ak','sk','llm_client'), None
     )
 
     components['db_view'].select(
@@ -166,24 +157,7 @@ def do_llm_response(history,selected_dbs):
         yield history
 
 
-llm_client = None
-def llm(ak,sk,client):
-    global llm_client
-    import llm
-    llm.init_param(ak,sk)
-    if client == "Wenxin":
-        llm_client = llm.baidu_client
-    elif client == "Tongyi":
-        llm_client = llm.qwen_agent_app
-    elif client == "Huggingface":
-        llm_client = llm.hg_client
-    
-    if ak == "" and sk == "":
-        gr.Info("重置成功")
-    else:
-        gr.Info("设置成功")
-
-    return llm_client
+llm_client = llm.baidu_client
 
 
 def file_handler(file_objs,name):

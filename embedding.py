@@ -1,5 +1,4 @@
 from transformers import AutoModel, AutoTokenizer
-from sklearn.preprocessing import normalize
 from typing import Any, List, Mapping, Optional,Union
 from langchain.callbacks.manager import (
     CallbackManagerForLLMRun
@@ -59,11 +58,3 @@ class Embedding(Embeddings):
         # Embed a single query
         embedding = self._call([text])
         return embedding[0]
-    
-
-# if __name__ == '__main__':
-#     sd = Embedding()
-#     v1 = sd.embed_query("他是一个人")
-#     v2 = sd.embed_query("他是一个好人")
-#     v3 = sd.embed_documents(["她是一条狗","他是一个人"])
-#     print(v1 @ v2.T)

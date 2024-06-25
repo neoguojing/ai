@@ -209,6 +209,12 @@ def db_expr(selected_index: gr.SelectData, dataframe_origin):
     return knowledgeBase.get_db_files(dbname)
 
 def do_search(selected_dbs,user_input):
+    if len(selected_dbs) == 0:
+        gr.Warning("请选择知识库！")
+        return
+    if user_input == "":
+        gr.Warning("请输入检索关键词！")
+        return
     print("do_search:",selected_dbs,user_input)
     context = knowledgeBase.retrieve_documents(selected_dbs,user_input)
     return context

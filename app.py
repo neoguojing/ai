@@ -40,7 +40,7 @@ def create_ui():
                             scale=1,
                             value=[],
                             file_count="single",
-                            root=absolute_path,
+                            root_dir=absolute_path,
                             # ignore_glob="**/__init__.py",
                             elem_id="file_expr",
                         )

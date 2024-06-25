@@ -25,57 +25,6 @@ def gradio(*keys):
 
 def create_ui():
     with gr.Blocks() as demo:
-        with gr.Tab("知识库"):
-            with gr.Row():
-                with gr.Column(scale=1):
-                    gr.Markdown(
-                                """
-                                ### 已有知识库
-                                > 知识库和其中包含的文档
-                                """)
-                    with gr.Group():
-                        components["db_view"] = gr.Dataframe(
-                                                    headers=["列表"],
-                                                    datatype=["str"],
-                                                    row_count=2,
-                                                    col_count=(1, "fixed"),
-                                                    interactive=False
-                        )
-                        components["file_expr"] = gr.FileExplorer(
-                            scale=1,
-                            value=[],
-                            file_count="single",
-                            root_dir=absolute_path,
-                            # ignore_glob="**/__init__.py",
-                            elem_id="file_expr",
-                        )
-                with gr.Column(scale=2):
-                    gr.Markdown(
-                            """
-                            ### 新建知识库
-                            """)
-                    with gr.Row():
-                        with gr.Column(scale=2):
-                            components["db_name"] = gr.Textbox(label="名称", info="请输入库名称", lines=1, value="")
-                        with gr.Column(scale=2):
-                            components["db_submit_btn"] = gr.Button(value="提交")
-                    components["file_upload"] = gr.File(elem_id='file_upload',file_count='multiple',label='文档上传', file_types=[".pdf", ".doc", '.docx', '.json', '.csv'])
-            gr.Markdown(
-                        """
-                        ### 知识库检索
-                        > 验证文档是否可被检索
-                        """)
-            with gr.Row():
-                with gr.Column(scale=2):
-                    components["db_input"] = gr.Textbox(label="关键词", lines=1, value="")
-                with gr.Column(scale=1):
-                    components["db_test_select"] = gr.Dropdown(knowledgeBase.get_bases(),multiselect=True, label="知识库选择")
-                with gr.Column(scale=1):
-                    components["dbtest_submit_btn"] = gr.Button(value="检索")
-            with gr.Row():
-                with gr.Group():
-                    components["db_search_result"] = gr.JSON(label="检索结果")
-
         with gr.Tab("问答"):
             with gr.Row():
                 with gr.Column(scale=2):
@@ -84,10 +33,67 @@ def create_ui():
                                             [(None,"你好，有什么需要帮助的？")],
                                             elem_id="chatbot",
                                             bubble_full_width=False,
-                                            height=600
+                                            height=600,
+                                            show_label=False
                             )
                         components["chat_input"] = gr.MultimodalTextbox(interactive=True, file_types=["image"], placeholder="Enter message or upload file...", show_label=False)
                         components["db_select"] = gr.CheckboxGroup(knowledgeBase.get_bases(),label="知识库", info="可选择1个或多个知识库")
+        
+        with gr.Tab("知识库"):
+            with gr.Row():
+                with gr.Column(scale=1):
+                    gr.Markdown(
+                                """
+                                ### 知识库列表
+                                """)
+                    with gr.Group():
+                        components["db_view"] = gr.Dataframe(
+                                                    headers=["库名"],
+                                                    datatype=["str"],
+                                                    row_count=1,
+                                                    col_count=1,
+                                                    interactive=False,
+                                                    height=200,
+                                                    column_widths=["50px"],
+                                                    show_label=False,
+                                                    wrap=False
+                        )
+                        components["file_expr"] = gr.FileExplorer(
+                            scale=1,
+                            value=[],
+                            file_count="single",
+                            root_dir=absolute_path,
+                            elem_id="file_expr",
+                            height=200,
+                            show_label=False
+                        )
+                with gr.Column(scale=2):
+                    gr.Markdown(
+                            """
+                            ### 新建知识库
+                            """)
+                    with gr.Row():
+                        with gr.Column(scale=2):
+                            components["db_name"] = gr.Textbox(placeholder="请输入知识库名称",show_label=False, lines=1, value="")
+                        with gr.Column(scale=2):
+                            components["db_submit_btn"] = gr.Button(value="提交")
+                    components["file_upload"] = gr.File(elem_id='file_upload',file_count='multiple',show_label=False,
+                                                        label='文档上传', file_types=[".pdf", ".doc", '.docx', '.json', '.csv'])
+            gr.Markdown(
+                        """
+                        ### 知识库检索
+                        """)
+            with gr.Row():
+                with gr.Column(scale=2):
+                    components["db_input"] = gr.Textbox(placeholder="关键词", lines=1, value="",show_label=False)
+                with gr.Column(scale=1):
+                    components["db_test_select"] = gr.Dropdown(knowledgeBase.get_bases(),multiselect=True,show_label=False)
+                with gr.Column(scale=1):
+                    components["dbtest_submit_btn"] = gr.Button(value="检索")
+            with gr.Row():
+                with gr.Group():
+                    components["db_search_result"] = gr.JSON(label="检索结果")
+
         create_event_handlers()
         demo.load(init,None,gradio("db_view","db_select","db_test_select"))
     return demo

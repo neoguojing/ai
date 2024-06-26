@@ -230,4 +230,4 @@ def do_search(selected_dbs,user_input):
 if __name__ == "__main__":
     demo = create_ui()
     # demo.launch(server_name="10.151.124.137")
-    demo.launch()
+    demo.launch(root_path="/chat")

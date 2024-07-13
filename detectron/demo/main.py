@@ -9,11 +9,12 @@ import numpy as np
 from gradio_image_prompter import ImagePrompter
 import sys
 sys.path.append("..")
-
+from detectron2.config import get_cfg
 from inference import ModelFactory
 from face import FaceAlgo
 from sam_everything import SamAnything
 from retriever import knowledgeBase
+from yolo_predictor import YOLOPredictor
 
 
 components = {}
@@ -40,7 +41,8 @@ algo_map = {
     "实例分割":"instance",
     "关键点检测":"keypoint",
     "全景分割":"panoptic",
-    "YOLO":"yolo",
+    "姿态":"pose",
+    "OBB":"OBB"
 }
 
 face_algo_map = {
@@ -57,7 +59,7 @@ def create_ui():
             with gr.Row():
                 with gr.Column(scale=2):
                     components["algo_type"] = gr.Dropdown(
-                                    ["目标检测","单阶段目标检测", "分类", "特征提取","语义分割","实例分割","关键点检测","全景分割","YOLO"],value="全景分割",
+                                    ["目标检测","单阶段目标检测", "分类", "特征提取","语义分割","实例分割","关键点检测","全景分割"],value="全景分割",
                                     label="算法类别",interactive=True
                             )
                 with gr.Column(scale=2):
@@ -75,6 +77,29 @@ def create_ui():
             with gr.Row():
                 with gr.Group():
                     components["result_output"] = gr.JSON(label="推理结果")
+
+        with gr.Tab("YOLO"):
+            with gr.Row():
+                with gr.Column(scale=2):
+                    components["yolo_algo_type"] = gr.Dropdown(
+                                    ["目标检测","分类","实例分割","姿态","OBB"],value="目标检测",
+                                    label="算法类别",interactive=True
+                            )
+                with gr.Column(scale=2):
+                    components["yolo_submit_btn"] = gr.Button(value="解析")
+            with gr.Row():
+                with gr.Column(scale=2):
+                    with gr.Row(elem_id='audio-container'):
+                        with gr.Group():
+                            components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入')
+                with gr.Column(scale=2):
+                    with gr.Row():
+                        with gr.Group():
+                            components["yolo_image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False)
+
+            with gr.Row():
+                with gr.Group():
+                    components["yolo_result_output"] = gr.JSON(label="推理结果")
 
         with gr.Tab("人脸算法"):   
             with gr.Row():
@@ -186,6 +211,11 @@ def create_event_handlers():
         do_refernce,gradio('algo_type','image_input'),gradio("result_output",'image_output')
     )
 
+    components["yolo_submit_btn"].click(
+        do_yolo_refernce,gradio('yolo_algo_type','yolo_image_input'),gradio("yolo_result_output",'yolo_image_output')
+    )
+
+
     components["face_type"].change(
         ui_by_facetype, gradio('face_type'), params["face_type"]
     )
@@ -234,6 +264,23 @@ def do_refernce(algo_type,input_image):
     algo_type = algo_map[algo_type]
     factory = ModelFactory()
     output,output_image = factory.predict(pil_image=input_image,task_type=algo_type)
+    if output_image is None or len(output_image) == 0:
+        return output,None
+    print("output image",output_image[0])
+    return output,output_image[0]
+
+def do_yolo_refernce(algo_type,input_image):
+    print("input image",input_image)
+    print(algo_type)
+
+    if input_image is None:
+        gr.Warning('请上传图片')
+        return None
+    algo_type = algo_map[algo_type]
+    cfg = get_cfg()
+    cfg.TASK_TYPE = algo_type
+    yolo = YOLOPredictor(cfg)
+    output,output_image = yolo(input_image)
     if output_image is None or len(output_image) == 0:
         return output,None
     print("output image",output_image[0])

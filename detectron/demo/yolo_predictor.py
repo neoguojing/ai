@@ -9,7 +9,7 @@ import gc
 from ultralytics import YOLO
 
 class YOLOPredictor:
-    _instance = None
+    _instances = {}
     _lock = threading.Lock()
 
     def __new__(cls, cfg=None):
@@ -17,24 +17,30 @@ class YOLOPredictor:
             raise ValueError("Configuration must be provided")
         
         with cls._lock:
-            if cfg not in cls._instances:
-                cls._instances[cfg] = super(YOLOPredictor, cls).__new__(cls)
-                cls._instances[cfg]._initialize(cfg)
-        return cls._instances[cfg]
+            if cfg.TASK_TYPE not in cls._instances:
+                cls._instances[cfg.TASK_TYPE] = super(YOLOPredictor, cls).__new__(cls)
+                cls._instances[cfg.TASK_TYPE]._initialize(cfg)
+        return cls._instances[cfg.TASK_TYPE]
 
     def _initialize(self, cfg):
         self.cfg = cfg
-        if cfg.TASK_TYPE == "classfication":
+        if cfg.TASK_TYPE == "classification":
+            print("classification")
             self.model = YOLO("yolov8n-cls.pt")
         elif cfg.TASK_TYPE == "detect":
+            print("detect")
             self.model = YOLO("yolov8n.pt")
         elif cfg.TASK_TYPE == "pose":
+            print("pose")
             self.model = YOLO("yolov8n-pose.pt")
         elif cfg.TASK_TYPE == "obb":
+            print("obb")
             self.model = YOLO("yolov8n-obb.pt")
-        elif cfg.TASK_TYPE == "segment":
+        elif cfg.TASK_TYPE == "instance":
+            print("instance")
             self.model = YOLO("yolov8n-seg.pt")
         else:
+            print("detect")
             self.model = YOLO("yolov8n.pt")
 
     # def __new__(cls, cfg=None):
@@ -61,12 +67,15 @@ class YOLOPredictor:
 
         if self.model is None:
             return None
-    
-        predictions = self.model([image])
+
+        if not isinstance(image,list):
+            image = [image]
+
+        predictions = self.model(image)
         return self._post_processor(predictions)
     
     def _post_processor(self, output):
-        print("-------------------\n", output)
+        print("-------yolo------------\n", output)
         pil_images = []
 
         result: Dict[str, Instances] = {
@@ -82,14 +91,13 @@ class YOLOPredictor:
             result["instances"] = Instances(o.orig_shape)
 
             if o.boxes is not None:
-                print(o.boxes.xywh, o.boxes.xywh.shape)
                 result["instances"].pred_boxes = o.boxes.xywh
 
             if o.masks is not None:
                 result["instances"].pred_masks = o.masks.xyn
 
             if o.probs is not None:
-                result["instances"].scores = o.probs.top1
+                result["instances"].scores = o.probs.top5
 
             if o.keypoints is not None:
                 result["instances"].pred_keypoints = o.keypoints.xyn

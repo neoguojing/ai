@@ -42,7 +42,8 @@ algo_map = {
     "关键点检测":"keypoint",
     "全景分割":"panoptic",
     "姿态":"pose",
-    "OBB":"OBB"
+    "OBB":"OBB",
+    "跟踪":"detect"
 }
 
 face_algo_map = {
@@ -82,7 +83,7 @@ def create_ui():
             with gr.Row():
                 with gr.Column(scale=2):
                     components["yolo_algo_type"] = gr.Dropdown(
-                                    ["目标检测","分类","实例分割","姿态","OBB"],value="目标检测",
+                                    ["目标检测","分类","实例分割","姿态","OBB","跟踪"],value="目标检测",
                                     label="算法类别",interactive=True
                             )
                 with gr.Column(scale=2):
@@ -92,10 +93,13 @@ def create_ui():
                     with gr.Row(elem_id='audio-container'):
                         with gr.Group():
                             components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入')
+                            components["yolo_video_input"] = gr.Video(label='输入',visible=False,interactive=True)
+        
                 with gr.Column(scale=2):
                     with gr.Row():
                         with gr.Group():
                             components["yolo_image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False)
+                            components["yolo_video_output"] = gr.PlayableVideo(label='输出',visible=False)
 
             with gr.Row():
                 with gr.Group():
@@ -212,7 +216,11 @@ def create_event_handlers():
     )
 
     components["yolo_submit_btn"].click(
-        do_yolo_refernce,gradio('yolo_algo_type','yolo_image_input'),gradio("yolo_result_output",'yolo_image_output')
+        do_yolo_refernce,gradio('yolo_algo_type','yolo_image_input','yolo_video_input'),gradio("yolo_result_output",'yolo_image_output','yolo_video_output')
+    )
+
+    components["yolo_algo_type"].change(
+        do_yolo_algo_type_chage, gradio('yolo_algo_type'), gradio('yolo_image_input','yolo_image_output','yolo_video_input','yolo_video_output')
     )
 
 
@@ -269,22 +277,39 @@ def do_refernce(algo_type,input_image):
     print("output image",output_image[0])
     return output,output_image[0]
 
-def do_yolo_refernce(algo_type,input_image):
+def do_yolo_algo_type_chage(value):
+    print("do_yolo_algo_type_chage:",value)
+    if value.strip() == "跟踪":
+        components["yolo_video_input"] = gr.Video(label='输入',visible=True,interactive=True)
+        components["yolo_video_output"] = gr.PlayableVideo(label='输出',visible=True)
+        components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入',visible=False)
+        components["yolo_image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False,visible=True)
+    else:
+        components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入',visible=True)
+        components["yolo_image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False,visible=True)
+        components["yolo_video_input"] = gr.Video(label='输入',visible=False,interactive=True)
+        components["yolo_video_output"] = gr.PlayableVideo(label='输出',visible=False)
+    return components["yolo_image_input"],components["yolo_image_output"],components["yolo_video_input"],components["yolo_video_output"]
+
+def do_yolo_refernce(algo_type,input_image,input_video):
     print("input image",input_image)
     print(algo_type)
 
-    if input_image is None:
-        gr.Warning('请上传图片')
+    if input_image is None and input_video is None:
+        gr.Warning('请上传图片或视频')
         return None
-    algo_type = algo_map[algo_type]
     cfg = get_cfg()
-    cfg.TASK_TYPE = algo_type
+    cfg.TASK_TYPE = algo_map[algo_type]
     yolo = YOLOPredictor(cfg)
-    output,output_image = yolo(input_image)
-    if output_image is None or len(output_image) == 0:
-        return output,None
-    print("output image",output_image[0])
-    return output,output_image[0]
+
+    if algo_type.strip() == "跟踪":
+        yield from yolo.track(input_video)
+    else:
+        output,output_image = yolo(input_image)
+        if output_image is None or len(output_image) == 0:
+            return output,None
+        print("output image",output_image[0])
+        return output,output_image[0],None
 
 def ui_by_facetype(face_type):
     print("ui_by_facetype",face_type)
@@ -453,4 +478,5 @@ def do_search(selected_dbs,user_input):
 
 if __name__ == "__main__":
     demo = create_ui()
+    demo.queue()
     demo.launch()

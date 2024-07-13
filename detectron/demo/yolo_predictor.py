@@ -2,11 +2,14 @@
 from pytorch_model_factory import TorchModelFactory
 from PIL import Image
 from typing import Any, Dict
+import sys
+sys.path.append("..")
 from detectron2.structures import Instances
 import torch
 import threading
 import gc
 from ultralytics import YOLO
+from detectron2.config import get_cfg
 
 class YOLOPredictor:
     _instances = {}
@@ -74,6 +77,47 @@ class YOLOPredictor:
         predictions = self.model(image)
         return self._post_processor(predictions)
     
+    def track(self,video_path):
+        import cv2
+        cap = cv2.VideoCapture(video_path)
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+        width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        output_path = get_file_path_without_extension(video_path)+".mp4"
+        print("track:",output_path)
+        video = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height))
+        # Loop through the video frames
+        frame_count = 0
+        while cap.isOpened():
+            # Read a frame from the video
+            success, frame = cap.read()
+            frame_count+=1
+            if success:
+                # Run YOLOv8 tracking on the frame, persisting tracks between frames
+                results = self.model.track(frame, persist=True)
+
+                # Visualize the results on the frame
+                annotated_frame = results[0].plot()
+
+                # Display the annotated frame
+                # cv2.imshow("YOLOv8 Tracking", annotated_frame)
+                video.write(annotated_frame)
+                if frame_count % fps == 0:
+                    yield None,annotated_frame, None
+                
+                # Break the loop if 'q' is pressed
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
+            else:
+                # Break the loop if the end of the video is reached
+                break
+
+        # Release the video capture object and close the display window
+        video.release()
+        cap.release()
+        # cv2.destroyAllWindows()
+        yield None,annotated_frame, output_path
+    
     def _post_processor(self, output):
         print("-------yolo------------\n", output)
         pil_images = []
@@ -116,12 +160,26 @@ class YOLOPredictor:
         # 手动触发垃圾回收
         gc.collect()
 
+def get_file_path_without_extension(file_path):
+    import os
+    # 获取文件所在的目录路径
+    directory = os.path.dirname(file_path)
+    
+    # 获取文件名（包括后缀）
+    filename_with_extension = os.path.basename(file_path)
+    
+    # 分离文件名和后缀
+    filename, extension = os.path.splitext(filename_with_extension)
+    
+    # 拼接目录路径和文件名（不包括后缀）
+    return os.path.join(directory, filename)
 
-
-# if __name__ == "__main__":
-#     f = YOLOPredictor()
-#     from PIL import Image
-#     img = Image.open("./test/test.png")
-#     f(img)
+if __name__ == "__main__":
+    cfg = get_cfg()
+    cfg.TASK_TYPE = "detect"
+    f = YOLOPredictor(cfg)
+    # from PIL import Image
+    # img = Image.open("./test/test.png")
+    f.track("/home/neo/Videos/trafic.webm")
 
     

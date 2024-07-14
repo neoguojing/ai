@@ -8,7 +8,8 @@ from detectron2.structures import Instances
 import torch
 import threading
 import gc
-from ultralytics import YOLO
+from ultralytics import YOLO,solutions
+from ultralytics.utils.plotting import Annotator, colors
 from detectron2.config import get_cfg
 
 class YOLOPredictor:
@@ -77,13 +78,13 @@ class YOLOPredictor:
         predictions = self.model(image)
         return self._post_processor(predictions)
     
-    def track(self,video_path):
+    def _video_processor(self,video_path,callback=None):
         import cv2
         cap = cv2.VideoCapture(video_path)
         fps = int(cap.get(cv2.CAP_PROP_FPS))
         width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        output_path = get_file_path_without_extension(video_path)+".mp4"
+        output_path = get_file_path_without_extension(video_path)+"after_inference.mp4"
         print("track:",output_path)
         video = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height))
         # Loop through the video frames
@@ -93,12 +94,8 @@ class YOLOPredictor:
             success, frame = cap.read()
             frame_count+=1
             if success:
-                # Run YOLOv8 tracking on the frame, persisting tracks between frames
-                results = self.model.track(frame, persist=True)
 
-                # Visualize the results on the frame
-                annotated_frame = results[0].plot()
-
+                annotated_frame = callback(frame)
                 # Display the annotated frame
                 # cv2.imshow("YOLOv8 Tracking", annotated_frame)
                 video.write(annotated_frame)
@@ -117,6 +114,77 @@ class YOLOPredictor:
         cap.release()
         # cv2.destroyAllWindows()
         yield None,annotated_frame, output_path
+    
+    def track(self,video_path):
+        def do_track(frame):
+            # Run YOLOv8 tracking on the frame, persisting tracks between frames
+            tracks = self.model.track(frame, persist=True)
+
+            # Visualize the results on the frame
+            return tracks[0].plot()
+        
+        yield from self._video_processor(video_path,do_track)
+
+    def track_with_seg(self,video_path):
+        def do_track(frame):
+            annotator = Annotator(frame, line_width=2)
+            results = self.model.track(frame, persist=True)
+            if results[0].boxes.id is not None and results[0].masks is not None:
+                masks = results[0].masks.xy
+                track_ids = results[0].boxes.id.int().cpu().tolist()
+
+                for mask, track_id in zip(masks, track_ids):
+                    annotator.seg_bbox(mask=mask, mask_color=colors(track_id, True), track_label=str(track_id))
+            return frame
+
+        yield from self._video_processor(video_path,do_track)
+
+    def counting(self,video_path,region_points=None):
+        # Init Object Counter
+        counter = solutions.ObjectCounter(
+            view_img=False,
+            reg_pts=region_points,
+            classes_names=self.model.names,
+            draw_tracks=True,
+            line_thickness=2,
+        )
+
+        def do_count(frame):
+            tracks = self.model.track(frame, persist=True, show=False)
+            return counter.start_counting(frame, tracks)
+        
+        yield from self._video_processor(video_path,do_count)
+
+    def crop():
+        pass
+
+    def gym_monitor(self,video_path,pose_type="pushup"):
+        gym_object = solutions.AIGym(
+            line_thickness=2,
+            view_img=False,
+            pose_type=pose_type,
+            kpts_to_check=[6, 8, 10],
+        )
+        def do_gym(frame):
+            tracks = self.model.track(frame, persist=True, show=False,verbose=False)
+            return gym_object.start_counting(frame, tracks,frame_count=20)
+        
+        yield from self._video_processor(video_path,do_gym)
+
+    def heatmap():
+        pass
+
+    def vision_eye():
+        pass
+
+    def speed():
+        pass
+
+    def distance():
+        pass
+
+    def queue_manager():
+        pass
     
     def _post_processor(self, output):
         print("-------yolo------------\n", output)

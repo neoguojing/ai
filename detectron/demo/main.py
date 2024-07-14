@@ -47,6 +47,10 @@ algo_map = {
     "计数":"detect",
     "体操":"pose",
     "热力图":"detect",
+    "视界":"detect",
+    "速度":"detect",
+    "队列":"detect",
+    "距离":"detect",
 }
 
 face_algo_map = {
@@ -86,7 +90,7 @@ def create_ui():
             with gr.Row():
                 with gr.Column(scale=2):
                     components["yolo_algo_type"] = gr.Dropdown(
-                                    ["目标检测","分类","实例分割","姿态","OBB","跟踪","计数","体操","热力图"],value="目标检测",
+                                    ["目标检测","分类","实例分割","姿态","OBB","跟踪","计数","体操","热力图","视界","速度","距离","队列"],value="目标检测",
                                     label="算法类别",interactive=True
                             )
                 with gr.Column(scale=2):
@@ -282,7 +286,7 @@ def do_refernce(algo_type,input_image):
 
 def do_yolo_algo_type_chage(value):
     print("do_yolo_algo_type_chage:",value)
-    if value.strip() == "跟踪" or value.strip() == "计数" or value.strip() == "体操" or "热力图" == value.strip():
+    if value.strip() == "跟踪" or value.strip() == "计数" or value.strip() == "体操" or "热力图" == value.strip() or "视界" == value.strip() or "速度" == value.strip() or "距离" == value.strip() or "队列" == value.strip():
         components["yolo_video_input"] = gr.Video(label='输入',visible=True,interactive=True)
         components["yolo_video_output"] = gr.PlayableVideo(label='输出',visible=True)
         components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入',visible=False)
@@ -313,6 +317,14 @@ def do_yolo_refernce(algo_type,input_image,input_video):
         yield from yolo.gym_monitor(input_video)
     elif algo_type.strip() == "热力图":
         yield from yolo.heatmap(input_video)
+    elif algo_type.strip() == "视界":
+        yield from yolo.vision_eye(input_video)
+    elif algo_type.strip() == "速度":
+        yield from yolo.speed(input_video)
+    elif algo_type.strip() == "距离":
+        yield from yolo.distance(input_video)
+    elif algo_type.strip() == "队列":
+        yield from yolo.queue_manager(input_video)
     else:
         output,output_image = yolo(input_image)
         if output_image is None or len(output_image) == 0:

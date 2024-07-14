@@ -207,8 +207,38 @@ class YOLOPredictor:
         
         yield from self._video_processor(video_path,do_draw)
 
-    def vision_eye():
-        pass
+    def vision_eye(self,video_path):
+        import math
+        
+        pixel_per_meter = 10
+        txt_color, txt_background, bbox_clr = ((0, 0, 0), (255, 255, 255), (255, 0, 255))
+
+        def vision_distance(frame):
+            annotator = Annotator(frame, line_width=2)
+
+            height = frame.shape[0]
+            center_point = (0, height)
+
+            results = self.model.track(frame, persist=True)
+            boxes = results[0].boxes.xyxy.cpu()
+
+            if results[0].boxes.id is not None:
+                track_ids = results[0].boxes.id.int().cpu().tolist()
+
+                for box, track_id in zip(boxes, track_ids):
+                    annotator.box_label(box, label=str(track_id), color=bbox_clr)
+                    annotator.visioneye(box, center_point)
+
+                    x1, y1 = int((box[0] + box[2]) // 2), int((box[1] + box[3]) // 2)  # Bounding box centroid
+
+                    distance = (math.sqrt((x1 - center_point[0]) ** 2 + (y1 - center_point[1]) ** 2)) / pixel_per_meter
+
+                    text_size, _ = cv2.getTextSize(f"Distance: {distance:.2f} m", cv2.FONT_HERSHEY_SIMPLEX, 1.2, 3)
+                    cv2.rectangle(frame, (x1, y1 - text_size[1] - 10), (x1 + text_size[0] + 10, y1), txt_background, -1)
+                    cv2.putText(frame, f"Distance: {distance:.2f} m", (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 1.2, txt_color, 3)
+            return frame
+
+        yield from self._video_processor(video_path,vision_distance)
 
     def speed(self,video_path):
         line_pts = [(0, 360), (1280, 360)]
@@ -233,9 +263,22 @@ class YOLOPredictor:
         
         yield from self._video_processor(video_path,do_dist_cal)
 
-    def queue_manager():
-        pass
-    
+    def queue_manager(self,video_path,queue_region=None):
+        queue = solutions.QueueManager(
+            classes_names=self.model.names,
+            reg_pts=queue_region,
+            line_thickness=3,
+            fontsize=1.0,
+            region_color=(255, 144, 31),
+        )
+
+        def queue(frame):
+            tracks = self.model.track(frame, show=False, persist=True, verbose=False)
+            queue.process_queue(frame, tracks)
+            return frame
+
+        yield from self._video_processor(video_path,queue)
+
     def _post_processor(self, output):
         print("-------yolo------------\n", output)
         pil_images = []

@@ -11,6 +11,7 @@ import gc
 from ultralytics import YOLO,solutions
 from ultralytics.utils.plotting import Annotator, colors
 from detectron2.config import get_cfg
+import cv2
 
 class YOLOPredictor:
     _instances = {}
@@ -79,7 +80,7 @@ class YOLOPredictor:
         return self._post_processor(predictions)
     
     def _video_processor(self,video_path,callback=None):
-        import cv2
+        
         cap = cv2.VideoCapture(video_path)
         fps = int(cap.get(cv2.CAP_PROP_FPS))
         width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -96,6 +97,8 @@ class YOLOPredictor:
             if success:
 
                 annotated_frame = callback(frame)
+                if annotated_frame is None:
+                    continue
                 # Display the annotated frame
                 # cv2.imshow("YOLOv8 Tracking", annotated_frame)
                 video.write(annotated_frame)
@@ -171,17 +174,64 @@ class YOLOPredictor:
         
         yield from self._video_processor(video_path,do_gym)
 
-    def heatmap():
-        pass
+    def heatmap(self,video_path):
+        heatmap_obj = solutions.Heatmap(
+            colormap=cv2.COLORMAP_PARULA,
+            view_img=False,
+            shape="circle",
+            classes_names=self.model.names,
+        )
+
+        classes_for_heatmap = [0, 2]
+        
+        def do_draw(frame):
+            try:
+                tracks = self.model.track(frame, persist=True, show=False, classes=classes_for_heatmap)
+                if tracks is None:
+                    # 处理 tracks 为 None 的情况，这里可以抛出异常或者返回特定的值
+                    raise ValueError("No tracks found")
+                
+                return heatmap_obj.generate_heatmap(frame, tracks)
+            
+            except AttributeError as e:
+                # 捕获 AttributeError 异常，并打印错误信息
+                print(f"AttributeError: {e}")
+                # 或者你可以选择返回一个默认值或者执行其他恰当的操作
+                return None
+            
+            except ValueError as e:
+                # 捕获 ValueError 异常，并打印错误信息
+                print(f"ValueError: {e}")
+                # 或者返回一个默认的 heatmap 或者其他值
+                return None
+        
+        yield from self._video_processor(video_path,do_draw)
 
     def vision_eye():
         pass
 
-    def speed():
-        pass
+    def speed(self,video_path):
+        line_pts = [(0, 360), (1280, 360)]
+        # Init speed-estimation obj
+        speed_obj = solutions.SpeedEstimator(
+            reg_pts=line_pts,
+            names=self.model.names,
+            view_img=False,
+        )   
 
-    def distance():
-        pass
+        def do_speed_cal(frame):
+            tracks = self.model.track(frame, persist=True, show=False)
+            return speed_obj.estimate_speed(frame, tracks)
+
+        yield from self._video_processor(video_path,do_speed_cal)
+
+    def distance(self,video_path):
+        dist_obj = solutions.DistanceCalculation(names=self.model.names, view_img=False)
+        def do_dist_cal(frame):
+            tracks = self.model.track(frame, persist=True, show=False)
+            return dist_obj.start_process(frame, tracks)
+        
+        yield from self._video_processor(video_path,do_dist_cal)
 
     def queue_manager():
         pass

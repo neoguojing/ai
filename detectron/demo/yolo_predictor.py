@@ -35,6 +35,7 @@ class YOLOPredictor:
         elif cfg.TASK_TYPE == "detect":
             print("detect")
             self.model = YOLO("yolov8n.pt")
+            self.dist_obj = solutions.DistanceCalculation(names=self.model.names, view_img=False)
         elif cfg.TASK_TYPE == "pose":
             print("pose")
             self.model = YOLO("yolov8n-pose.pt")
@@ -47,6 +48,17 @@ class YOLOPredictor:
         else:
             print("detect")
             self.model = YOLO("yolov8n.pt")
+
+    @classmethod
+    def get_instance(cls, task_type):
+        with cls._lock:
+            return cls._instances.get(task_type)
+        
+    def set_dis_obj(self,a,b):
+        if self.dist_obj is not None:
+            self.dist_obj.selected_boxes = {}
+            self.dist_obj.selected_boxes = {a:None,b:None}
+            print("set_dis_obj",self.dist_obj.selected_boxes)
 
     # def __new__(cls, cfg=None):
     #     if cls._instance is None:
@@ -96,14 +108,17 @@ class YOLOPredictor:
             frame_count+=1
             if success:
 
-                annotated_frame = callback(frame)
+                annotated_frame,tracks = callback(frame)
                 if annotated_frame is None:
                     continue
+
+                if tracks is not None:
+                    output,_ = self._post_processor(tracks)
                 # Display the annotated frame
                 # cv2.imshow("YOLOv8 Tracking", annotated_frame)
                 video.write(annotated_frame)
                 if frame_count % fps == 0:
-                    yield None,annotated_frame, None
+                    yield output,annotated_frame, None
                 
                 # Break the loop if 'q' is pressed
                 if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -116,7 +131,7 @@ class YOLOPredictor:
         video.release()
         cap.release()
         # cv2.destroyAllWindows()
-        yield None,annotated_frame, output_path
+        yield output,annotated_frame, output_path
     
     def track(self,video_path):
         def do_track(frame):
@@ -124,7 +139,7 @@ class YOLOPredictor:
             tracks = self.model.track(frame, persist=True)
 
             # Visualize the results on the frame
-            return tracks[0].plot()
+            return tracks[0].plot(),tracks
         
         yield from self._video_processor(video_path,do_track)
 
@@ -138,7 +153,7 @@ class YOLOPredictor:
 
                 for mask, track_id in zip(masks, track_ids):
                     annotator.seg_bbox(mask=mask, mask_color=colors(track_id, True), track_label=str(track_id))
-            return frame
+            return frame,results
 
         yield from self._video_processor(video_path,do_track)
 
@@ -154,7 +169,7 @@ class YOLOPredictor:
 
         def do_count(frame):
             tracks = self.model.track(frame, persist=True, show=False)
-            return counter.start_counting(frame, tracks)
+            return counter.start_counting(frame, tracks),tracks
         
         yield from self._video_processor(video_path,do_count)
 
@@ -169,8 +184,14 @@ class YOLOPredictor:
             kpts_to_check=[6, 8, 10],
         )
         def do_gym(frame):
-            tracks = self.model.track(frame, persist=True, show=False,verbose=False)
-            return gym_object.start_counting(frame, tracks,frame_count=20)
+            try:
+                tracks = self.model.track(frame, persist=True, show=False,verbose=False)
+                return gym_object.start_counting(frame, tracks,frame_count=20),tracks
+            except TypeError as e:
+                # 捕获 AttributeError 异常，并打印错误信息
+                print(f"TypeError: {e}")
+                # 或者你可以选择返回一个默认值或者执行其他恰当的操作
+                return None,None
         
         yield from self._video_processor(video_path,do_gym)
 
@@ -191,19 +212,19 @@ class YOLOPredictor:
                     # 处理 tracks 为 None 的情况，这里可以抛出异常或者返回特定的值
                     raise ValueError("No tracks found")
                 
-                return heatmap_obj.generate_heatmap(frame, tracks)
+                return heatmap_obj.generate_heatmap(frame, tracks),tracks
             
             except AttributeError as e:
                 # 捕获 AttributeError 异常，并打印错误信息
                 print(f"AttributeError: {e}")
                 # 或者你可以选择返回一个默认值或者执行其他恰当的操作
-                return None
+                return None,None
             
             except ValueError as e:
                 # 捕获 ValueError 异常，并打印错误信息
                 print(f"ValueError: {e}")
                 # 或者返回一个默认的 heatmap 或者其他值
-                return None
+                return None,None
         
         yield from self._video_processor(video_path,do_draw)
 
@@ -236,7 +257,7 @@ class YOLOPredictor:
                     text_size, _ = cv2.getTextSize(f"Distance: {distance:.2f} m", cv2.FONT_HERSHEY_SIMPLEX, 1.2, 3)
                     cv2.rectangle(frame, (x1, y1 - text_size[1] - 10), (x1 + text_size[0] + 10, y1), txt_background, -1)
                     cv2.putText(frame, f"Distance: {distance:.2f} m", (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 1.2, txt_color, 3)
-            return frame
+            return frame,results
 
         yield from self._video_processor(video_path,vision_distance)
 
@@ -251,15 +272,16 @@ class YOLOPredictor:
 
         def do_speed_cal(frame):
             tracks = self.model.track(frame, persist=True, show=False)
-            return speed_obj.estimate_speed(frame, tracks)
+            return speed_obj.estimate_speed(frame, tracks),tracks
 
         yield from self._video_processor(video_path,do_speed_cal)
 
     def distance(self,video_path):
-        dist_obj = solutions.DistanceCalculation(names=self.model.names, view_img=False)
+        
         def do_dist_cal(frame):
-            tracks = self.model.track(frame, persist=True, show=False)
-            return dist_obj.start_process(frame, tracks)
+            tracks = self.model.track(frame, persist=True, show=False, verbose=False)
+            print("tracks:",len(tracks),self.dist_obj.trk_ids)
+            return self.dist_obj.start_process(frame, tracks),tracks
         
         yield from self._video_processor(video_path,do_dist_cal)
 
@@ -275,7 +297,7 @@ class YOLOPredictor:
         def queue(frame):
             tracks = self.model.track(frame, show=False, persist=True, verbose=False)
             queue.process_queue(frame, tracks)
-            return frame
+            return frame,tracks
 
         yield from self._video_processor(video_path,queue)
 
@@ -297,6 +319,8 @@ class YOLOPredictor:
 
             if o.boxes is not None:
                 result["instances"].pred_boxes = o.boxes.xywh
+                if o.boxes.id is not None:
+                    result["instances"].trk_ids = o.boxes.id.int().cpu().tolist()
 
             if o.masks is not None:
                 result["instances"].pred_masks = o.masks.xyn
@@ -310,6 +334,9 @@ class YOLOPredictor:
             if o.obb is not None:
                 result["instances"].pred_obb = o.obb.xywhr
 
+            
+
+        
         return result, pil_images
 
     def release(self):
@@ -335,12 +362,12 @@ def get_file_path_without_extension(file_path):
     # 拼接目录路径和文件名（不包括后缀）
     return os.path.join(directory, filename)
 
-if __name__ == "__main__":
-    cfg = get_cfg()
-    cfg.TASK_TYPE = "detect"
-    f = YOLOPredictor(cfg)
-    # from PIL import Image
-    # img = Image.open("./test/test.png")
-    f.track("/home/neo/Videos/trafic.webm")
+# if __name__ == "__main__":
+#     cfg = get_cfg()
+#     cfg.TASK_TYPE = "detect"
+#     f = YOLOPredictor(cfg)
+#     # from PIL import Image
+#     # img = Image.open("./test/test.png")
+#     f.track("/home/neo/Videos/trafic.webm")
 
     

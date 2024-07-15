@@ -99,6 +99,8 @@ def create_ui():
                 with gr.Column(scale=2):
                     with gr.Row(elem_id='audio-container'):
                         with gr.Group():
+                            components["yolo_dist_a"] = gr.Number(value=0,label="A",visible=False)
+                            components["yolo_dist_b"] = gr.Number(value=0,label="B",visible=False)
                             components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入')
                             components["yolo_video_input"] = gr.Video(label='输入',visible=False,interactive=True)
         
@@ -223,11 +225,21 @@ def create_event_handlers():
     )
 
     components["yolo_submit_btn"].click(
-        do_yolo_refernce,gradio('yolo_algo_type','yolo_image_input','yolo_video_input'),gradio("yolo_result_output",'yolo_image_output','yolo_video_output')
+        do_yolo_refernce,
+        gradio('yolo_algo_type','yolo_image_input','yolo_video_input'),
+        gradio("yolo_result_output",'yolo_image_output','yolo_video_output')
     )
 
     components["yolo_algo_type"].change(
-        do_yolo_algo_type_chage, gradio('yolo_algo_type'), gradio('yolo_image_input','yolo_image_output','yolo_video_input','yolo_video_output')
+        do_yolo_algo_type_chage, 
+        gradio('yolo_algo_type'),
+        gradio('yolo_image_input','yolo_image_output','yolo_video_input','yolo_video_output','yolo_dist_a','yolo_dist_b')
+    )
+
+    components["yolo_dist_b"].change(
+        do_yolo_dist_change,
+        gradio('yolo_dist_a','yolo_dist_b'),
+        None,
     )
 
 
@@ -284,6 +296,10 @@ def do_refernce(algo_type,input_image):
     print("output image",output_image[0])
     return output,output_image[0]
 
+def do_yolo_dist_change(a,b):
+     if YOLOPredictor.get_instance("detect") is not None:
+         YOLOPredictor.get_instance("detect").set_dis_obj(a,b)
+
 def do_yolo_algo_type_chage(value):
     print("do_yolo_algo_type_chage:",value)
     if value.strip() == "跟踪" or value.strip() == "计数" or value.strip() == "体操" or "热力图" == value.strip() or "视界" == value.strip() or "速度" == value.strip() or "距离" == value.strip() or "队列" == value.strip():
@@ -291,12 +307,16 @@ def do_yolo_algo_type_chage(value):
         components["yolo_video_output"] = gr.PlayableVideo(label='输出',visible=True)
         components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入',visible=False)
         components["yolo_image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False,visible=True)
+        components["yolo_dist_a"] = gr.Number(value=0,label="A",visible=True)
+        components["yolo_dist_b"] = gr.Number(value=0,label="B",visible=True)
     else:
         components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入',visible=True)
         components["yolo_image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False,visible=True)
         components["yolo_video_input"] = gr.Video(label='输入',visible=False,interactive=True)
         components["yolo_video_output"] = gr.PlayableVideo(label='输出',visible=False)
-    return components["yolo_image_input"],components["yolo_image_output"],components["yolo_video_input"],components["yolo_video_output"]
+        components["yolo_dist_a"] = gr.Number(value=0,label="A",visible=False)
+        components["yolo_dist_b"] = gr.Number(value=0,label="B",visible=False)
+    return components["yolo_image_input"],components["yolo_image_output"],components["yolo_video_input"],components["yolo_video_output"], components["yolo_dist_a"], components["yolo_dist_b"]
 
 def do_yolo_refernce(algo_type,input_image,input_video):
     print("input image",input_image)

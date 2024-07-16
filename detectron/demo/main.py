@@ -111,6 +111,7 @@ def create_ui():
                         with gr.Group():
                             components["yolo_image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False)
                             components["yolo_video_output"] = gr.PlayableVideo(label='输出',visible=False)
+                            components["yolo_crop_output"] = gr.Gallery(type="pil",elem_id='crop-output',label='裁剪',interactive=False,visible=True)
 
             with gr.Row():
                 with gr.Group():
@@ -229,13 +230,13 @@ def create_event_handlers():
     components["yolo_submit_btn"].click(
         do_yolo_refernce,
         gradio('yolo_algo_type','yolo_image_input','yolo_video_input'),
-        gradio("yolo_result_output",'yolo_image_output','yolo_video_output')
+        gradio("yolo_result_output",'yolo_image_output','yolo_video_output',"yolo_crop_output")
     )
 
     components["yolo_algo_type"].change(
         do_yolo_algo_type_chage, 
         gradio('yolo_algo_type'),
-        gradio('yolo_image_input','yolo_image_output','yolo_video_input','yolo_video_output','yolo_dist_a','yolo_dist_b')
+        gradio('yolo_image_input','yolo_image_output','yolo_video_input','yolo_video_output','yolo_dist_a','yolo_dist_b',"yolo_crop_output")
     )
 
     components["yolo_dist_b"].change(
@@ -309,6 +310,7 @@ def do_yolo_algo_type_chage(value):
         components["yolo_video_output"] = gr.PlayableVideo(label='输出',visible=True)
         components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入',visible=False)
         components["yolo_image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False,visible=True)
+        components["yolo_crop_output"] = gr.Gallery(type="pil",elem_id='crop-output',label='裁剪',interactive=False,visible=False)
         if "距离" == value.strip():
             components["yolo_dist_a"] = gr.Number(value=0,label="A",visible=True,info="跟踪id-A")
             components["yolo_dist_b"] = gr.Number(value=0,label="B",visible=True,info="跟踪id-B")
@@ -319,7 +321,9 @@ def do_yolo_algo_type_chage(value):
         components["yolo_video_output"] = gr.PlayableVideo(label='输出',visible=False)
         components["yolo_dist_a"] = gr.Number(value=0,label="A",visible=False)
         components["yolo_dist_b"] = gr.Number(value=0,label="B",visible=False)
-    return components["yolo_image_input"],components["yolo_image_output"],components["yolo_video_input"],components["yolo_video_output"], components["yolo_dist_a"], components["yolo_dist_b"]
+        components["yolo_crop_output"] = gr.Gallery(type="pil",elem_id='crop-output',label='裁剪',interactive=False,visible=True)
+
+    return components["yolo_image_input"],components["yolo_image_output"],components["yolo_video_input"],components["yolo_video_output"], components["yolo_dist_a"], components["yolo_dist_b"],components["yolo_crop_output"]
 
 def do_yolo_refernce(algo_type,input_image,input_video):
     print("input image",input_image)
@@ -351,9 +355,9 @@ def do_yolo_refernce(algo_type,input_image,input_video):
     else:
         output,output_image = yolo(input_image)
         if output_image is None or len(output_image) == 0:
-            return output,None
-        print("output image",output_image[0])
-        return output,output_image[0],None
+            yield output,None,None,None
+        print("output image:",len(output_image))
+        yield output,output_image[0],None,output_image[1:]
 
 def ui_by_facetype(face_type):
     print("ui_by_facetype",face_type)

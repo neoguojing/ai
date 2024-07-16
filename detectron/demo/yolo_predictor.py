@@ -29,6 +29,8 @@ class YOLOPredictor:
 
     def _initialize(self, cfg):
         self.cfg = cfg
+        self.crop_enable = False
+
         if cfg.TASK_TYPE == "classification":
             print("classification")
             self.model = YOLO("yolov8n-cls.pt")
@@ -36,6 +38,7 @@ class YOLOPredictor:
             print("detect")
             self.model = YOLO("yolov8n.pt")
             self.dist_obj = solutions.DistanceCalculation(names=self.model.names, view_img=False)
+            self.crop_enable = True
         elif cfg.TASK_TYPE == "pose":
             print("pose")
             self.model = YOLO("yolov8n-pose.pt")
@@ -118,7 +121,7 @@ class YOLOPredictor:
                 # cv2.imshow("YOLOv8 Tracking", annotated_frame)
                 video.write(annotated_frame)
                 if frame_count % fps == 0:
-                    yield output,annotated_frame, None
+                    yield output,annotated_frame, None,None
                 
                 # Break the loop if 'q' is pressed
                 if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -131,7 +134,7 @@ class YOLOPredictor:
         video.release()
         cap.release()
         # cv2.destroyAllWindows()
-        yield output,annotated_frame, output_path
+        yield output,annotated_frame, output_path,None
     
     def track(self,video_path):
         def do_track(frame):
@@ -173,8 +176,18 @@ class YOLOPredictor:
         
         yield from self._video_processor(video_path,do_count)
 
-    def crop():
-        pass
+    def crop(self,frame,results):
+        boxes = results[0].boxes.xyxy.cpu().tolist()
+        clss = results[0].boxes.cls.cpu().tolist()
+        annotator = Annotator(frame, line_width=2, example=self.model.names)
+        pil_images = []
+        if boxes is not None:
+            for box, cls in zip(boxes, clss):
+                annotator.box_label(box, color=colors(int(cls), True), label=self.model.names[int(cls)])
+                crop_obj = frame[int(box[1]) : int(box[3]), int(box[0]) : int(box[2])]
+                pil_images.append(Image.fromarray(crop_obj[..., ::-1]))
+
+        return pil_images
 
     def gym_monitor(self,video_path,pose_type="pushup"):
         gym_object = solutions.AIGym(
@@ -235,7 +248,8 @@ class YOLOPredictor:
 
         def vision_distance(frame):
             annotator = Annotator(frame, line_width=2)
-
+            
+            nonlocal center_point
             if center_point is None:
                 height = frame.shape[0]
                 center_point = (0, height)
@@ -305,38 +319,36 @@ class YOLOPredictor:
         # print("-------yolo------------\n", output)
         pil_images = []
 
-        result: Dict[str, Instances] = {
-            "instances": None
-        }
+        result: Dict[str, Instances] = {}
 
         # TODO 只支持一个图片
         for i, o in enumerate(output):
             im_bgr = o.plot()
             im_rgb = Image.fromarray(im_bgr[..., ::-1])
             pil_images.append(im_rgb)
-            
-            result["instances"] = Instances(o.orig_shape)
+            if self.crop_enable:
+                pil_images += self.crop(o.orig_img,output)
+
+            inst_key = f"instances_{i}"
+            result[inst_key] = Instances(o.orig_shape)
 
             if o.boxes is not None:
-                result["instances"].pred_boxes = o.boxes.xywh
+                result[inst_key].pred_boxes = o.boxes.xywh
                 if o.boxes.id is not None:
-                    result["instances"].trk_ids = o.boxes.id.int().cpu().tolist()
+                    result[inst_key].trk_ids = o.boxes.id.int().cpu().tolist()
 
             if o.masks is not None:
-                result["instances"].pred_masks = o.masks.xyn
+                result[inst_key].pred_masks = o.masks.xyn
 
             if o.probs is not None:
-                result["instances"].scores = o.probs.top5
+                result[inst_key].scores = o.probs.top5
 
             if o.keypoints is not None:
-                result["instances"].pred_keypoints = o.keypoints.xyn
+                result[inst_key].pred_keypoints = o.keypoints.xyn
 
             if o.obb is not None:
-                result["instances"].pred_obb = o.obb.xywhr
+                result[inst_key].pred_obb = o.obb.xywhr
 
-            
-
-        
         return result, pil_images
 
     def release(self):

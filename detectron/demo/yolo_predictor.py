@@ -195,15 +195,14 @@ class YOLOPredictor:
         
         yield from self._video_processor(video_path,do_gym)
 
-    def heatmap(self,video_path):
+    def heatmap(self,video_path,classes_for_heatmap = None,region_points=None):
         heatmap_obj = solutions.Heatmap(
             colormap=cv2.COLORMAP_PARULA,
             view_img=False,
             shape="circle",
             classes_names=self.model.names,
+            count_reg_pts=region_points,
         )
-
-        classes_for_heatmap = [0, 2]
         
         def do_draw(frame):
             try:
@@ -228,7 +227,7 @@ class YOLOPredictor:
         
         yield from self._video_processor(video_path,do_draw)
 
-    def vision_eye(self,video_path):
+    def vision_eye(self,video_path,center_point=None):
         import math
         
         pixel_per_meter = 10
@@ -237,8 +236,9 @@ class YOLOPredictor:
         def vision_distance(frame):
             annotator = Annotator(frame, line_width=2)
 
-            height = frame.shape[0]
-            center_point = (0, height)
+            if center_point is None:
+                height = frame.shape[0]
+                center_point = (0, height)
 
             results = self.model.track(frame, persist=True)
             boxes = results[0].boxes.xyxy.cpu()
@@ -302,7 +302,7 @@ class YOLOPredictor:
         yield from self._video_processor(video_path,queue)
 
     def _post_processor(self, output):
-        print("-------yolo------------\n", output)
+        # print("-------yolo------------\n", output)
         pil_images = []
 
         result: Dict[str, Instances] = {

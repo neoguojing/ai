@@ -98,9 +98,11 @@ def create_ui():
             with gr.Row():
                 with gr.Column(scale=2):
                     with gr.Row(elem_id='audio-container'):
-                        with gr.Group():
+                        with gr.Column(scale=2):
                             components["yolo_dist_a"] = gr.Number(value=0,label="A",visible=False)
+                        with gr.Column(scale=2):
                             components["yolo_dist_b"] = gr.Number(value=0,label="B",visible=False)
+                        with gr.Group():
                             components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入')
                             components["yolo_video_input"] = gr.Video(label='输入',visible=False,interactive=True)
         
@@ -307,8 +309,9 @@ def do_yolo_algo_type_chage(value):
         components["yolo_video_output"] = gr.PlayableVideo(label='输出',visible=True)
         components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入',visible=False)
         components["yolo_image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False,visible=True)
-        components["yolo_dist_a"] = gr.Number(value=0,label="A",visible=True)
-        components["yolo_dist_b"] = gr.Number(value=0,label="B",visible=True)
+        if "距离" == value.strip():
+            components["yolo_dist_a"] = gr.Number(value=0,label="A",visible=True,info="跟踪id-A")
+            components["yolo_dist_b"] = gr.Number(value=0,label="B",visible=True,info="跟踪id-B")
     else:
         components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入',visible=True)
         components["yolo_image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False,visible=True)

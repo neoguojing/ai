@@ -5,8 +5,10 @@ from langchain.callbacks.manager import (
 )
 from langchain_core.embeddings import Embeddings
 import torch
+from graphrag.query.llm.base import BaseTextEmbedding
 
-class Embedding(Embeddings):
+
+class Embedding(Embeddings,BaseTextEmbedding):
 
     def __init__(self,**kwargs):
         self.model=AutoModel.from_pretrained('BAAI/bge-small-zh-v1.5')
@@ -58,3 +60,23 @@ class Embedding(Embeddings):
         # Embed a single query
         embedding = self._call([text])
         return embedding[0]
+    
+
+    def embed(self, text: str, **kwargs: Any) -> list[float]:
+        """Embed a text string."""
+        emb = self._call([text])
+
+        if emb is not None and len(emb) > 0:
+            list_data = emb[0].tolist()
+            print("embed:",emb[0].shape,type(emb[0]),type(list_data))
+            return list_data
+
+    async def aembed(self, text: str, **kwargs: Any) -> list[float]:
+        """Embed a text string asynchronously."""
+        return self.embed(text)
+
+
+# if __name__ == "__main__":
+#     emb = Embedding()
+#     # demo.launch(server_name="10.151.124.137")
+#     emb.embed("你好！")

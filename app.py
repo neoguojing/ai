@@ -77,6 +77,7 @@ def create_ui():
                     with gr.Row():
                         with gr.Column(scale=2):
                             components["db_name"] = gr.Textbox(placeholder="请输入知识库名称",show_label=False, lines=1, value="")
+                            components["db_type"] =  gr.Radio(["RAG", "GRAPH"], label="知识库类型")
                         with gr.Column(scale=2):
                             components["db_submit_btn"] = gr.Button(value="提交")
                     components["file_upload"] = gr.File(elem_id='file_upload',file_count='multiple',show_label=False,
@@ -108,7 +109,7 @@ def init():
 def create_event_handlers():
 
     components["db_submit_btn"].click(
-        file_handler,gradio('file_upload','db_name'),gradio("db_view",'db_select',"db_test_select")
+        file_handler,gradio('file_upload','db_name','db_type'),gradio("db_view",'db_select',"db_test_select")
     )
 
     components["chat_input"].submit(
@@ -181,7 +182,7 @@ def do_llm_response(history,selected_dbs):
 llm_client = llm.baidu_client
 
 
-def file_handler(file_objs,name):
+def file_handler(file_objs,name,db_type):
     import shutil
     import os
     

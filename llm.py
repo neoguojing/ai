@@ -56,7 +56,6 @@ def qwen_agent_app(input):
     
 
 def hg_client(input):
-
     import requests
     API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
     headers = {"Authorization": f"Bearer {config.hg_token}"}

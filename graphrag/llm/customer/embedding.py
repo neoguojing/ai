@@ -9,10 +9,11 @@ from graphrag.llm.types import (
     EmbeddingOutput,
     LLMInput,
 )
+from .custom_llm_config import CustomConfiguration
 
 class Embedding(BaseLLM[EmbeddingInput, EmbeddingOutput]):
 
-    def __init__(self,**kwargs):
+    def __init__(self,configuration: CustomConfiguration):
         self.model=AutoModel.from_pretrained('BAAI/bge-small-zh-v1.5')
         self.tokenizer = AutoTokenizer.from_pretrained('BAAI/bge-small-zh-v1.5')
         self.model.eval()

@@ -22,6 +22,12 @@ from graphrag.llm import (
     create_openai_completion_llm,
     create_openai_embedding_llm,
     create_tpm_rpm_limiters,
+
+    CustomConfiguration,
+    CustomLLM,
+    Embedding,
+    create_custom_embedding_llm,
+    create_custom_llm
 )
 
 if TYPE_CHECKING:
@@ -118,6 +124,21 @@ def _load_openai_completion_llm(
         azure,
     )
 
+def _load_custom_completion_llm(
+    on_error: ErrorHandlerFn,
+    cache: LLMCache,
+    config: dict[str, Any],
+    azure=False,
+):
+    return _create_custom_chat_llm(
+        CustomConfiguration({
+            **_get_base_config(config),
+        }),
+        on_error,
+        cache,
+    )
+
+
 
 def _load_openai_chat_llm(
     on_error: ErrorHandlerFn,
@@ -164,6 +185,20 @@ def _load_openai_embeddings_llm(
         azure,
     )
 
+def _load_custom_embeddings_llm(
+    on_error: ErrorHandlerFn,
+    cache: LLMCache,
+    config: dict[str, Any],
+    azure=False,
+):
+    return _create_custom_embeddings_llm(
+        CustomConfiguration({
+            **_get_base_config(config),
+        }),
+        on_error,
+        cache,
+        azure,
+    )
 
 def _load_azure_openai_completion_llm(
     on_error: ErrorHandlerFn, cache: LLMCache, config: dict[str, Any]
@@ -201,6 +236,10 @@ def _get_base_config(config: dict[str, Any]) -> dict[str, Any]:
         "concurrent_requests": config.get("concurrent_requests", 4),
         "encoding_model": config.get("encoding_model", "cl100k_base"),
         "cognitive_services_endpoint": config.get("cognitive_services_endpoint"),
+        # custom
+        "ak":config.get("ak"),
+        "sk":config.get("sk"),
+        "token":config.get("token"),
     }
 
 
@@ -236,11 +275,11 @@ loaders = {
         "chat": False,
     },
     LLMType.CustomChat: {
-        "load": _load_azure_openai_embeddings_llm,
+        "load": _load_custom_completion_llm,
         "chat": False,
     },
     LLMType.CustomEmbedding: {
-        "load": _load_azure_openai_embeddings_llm,
+        "load": _load_custom_embeddings_llm,
         "chat": False,
     },
     LLMType.StaticResponse: {
@@ -248,6 +287,31 @@ loaders = {
         "chat": False,
     },
 }
+
+
+def _create_custom_chat_llm(
+    configuration: CustomConfiguration,
+    on_error: ErrorHandlerFn,
+    cache: LLMCache,
+) -> CompletionLLM:
+    """Create an openAI chat llm."""
+    limiter = _create_limiter(configuration)
+    semaphore = _create_semaphore(configuration)
+    return create_custom_llm(
+        configuration, cache, limiter, semaphore, on_error=on_error
+    )
+
+def _create_custom_embeddings_llm(
+    configuration: CustomConfiguration,
+    on_error: ErrorHandlerFn,
+    cache: LLMCache,
+) -> EmbeddingLLM:
+    """Create an openAI embeddings llm."""
+    limiter = _create_limiter(configuration)
+    semaphore = _create_semaphore(configuration)
+    return create_custom_embedding_llm(
+        configuration, cache, limiter, semaphore, on_error=on_error
+    )
 
 
 def _create_openai_chat_llm(

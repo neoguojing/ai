@@ -4,14 +4,17 @@
 """Custom LLM implementations."""
 
 from .factories import (
-    create_openai_chat_llm,
-    create_openai_completion_llm,
-    create_openai_embedding_llm,
+    create_custom_embedding_llm,
+    create_custom_llm,
 )
 from .llm import CustomLLM
 from .embedding import Embedding
+from .custom_llm_config import CustomConfiguration
 
 __all__ = [
     "CustomLLM",
     "Embedding",
+    "CustomConfiguration",
+    "create_custom_embedding_llm",
+    "create_custom_llm",
 ]

@@ -9,12 +9,12 @@ from graphrag.llm.types import (
     LLMInput,
 )
 from typing_extensions import Unpack
+from custom_llm_config import CustomConfiguration
 
 class CustomLLM(BaseLLM[CompletionInput, CompletionOutput]):
-    def __init__(self,ak,sk,token=None):
-        self.ak = ak
-        self.sk = sk
-        self.token = token
+    _configuration: CustomConfiguration
+    def __init__(self,configuration: CustomConfiguration):
+        self.configuration = configuration
 
     def baidu_client(self, input):
         url = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-lite-8k?access_token=" + self.get_access_token()
@@ -42,11 +42,11 @@ class CustomLLM(BaseLLM[CompletionInput, CompletionOutput]):
     
     def get_access_token(self):
         url = "https://aip.baidubce.com/oauth/2.0/token"
-        params = {"grant_type": "client_credentials", "client_id": self.ak, "client_secret": self.sk}
+        params = {"grant_type": "client_credentials", "client_id": self.configuration.access_key, "client_secret": self.configuration.secret_key}
         return str(requests.post(url, params=params).json().get("access_token"))
 
     def qwen_agent_app(self, input):
-        response = Application.call(app_id=self.ak, prompt=input, api_key=self.sk)
+        response = Application.call(app_id=self.configuration.access_key, prompt=input, api_key=self.configuration.secret_key)
 
         if response.status_code != HTTPStatus.OK:
             print('request_id=%s, code=%s, message=%s\n' % (response.request_id, response.status_code, response.message))
@@ -57,7 +57,7 @@ class CustomLLM(BaseLLM[CompletionInput, CompletionOutput]):
     
     def hg_client(self, input):
         API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
-        headers = {"Authorization": f"Bearer {self.token}"}
+        headers = {"Authorization": f"Bearer {self.configuration.token}"}
 
         def query(payload):
             response = requests.post(API_URL, headers=headers, json=payload)

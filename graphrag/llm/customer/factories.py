@@ -101,7 +101,7 @@ def _cached(
 def get_completion_cache_args(configuration: CustomConfiguration) -> dict:
     """Get the cache arguments for a completion LLM."""
     return {
-        "ak": configuration.api_key,
-        "sk": configuration._secret_key,
-        "token": configuration._token,
+        "ak": configuration.access_key,
+        "sk": configuration.secret_key,
+        "token": configuration.token,
     }

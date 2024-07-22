@@ -11,6 +11,9 @@ from graphrag.config.enums import LLMType
 class LLMParametersInput(TypedDict):
     """LLM Parameters model."""
 
+    ak: NotRequired[str | None]
+    sk: NotRequired[str | None]
+    token: NotRequired[str | None]
     api_key: NotRequired[str | None]
     type: NotRequired[LLMType | str | None]
     model: NotRequired[str | None]

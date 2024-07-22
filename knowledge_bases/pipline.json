@@ -264,7 +264,6 @@ summary.\nMake sure it is written in third person, and include the entity names 
                     "strategy": {
                         "type": "custom",
                         "llm": {
-                            "ak": "REDACTED, length 9",
                             "type": "custom_embedding",
                         },
                         "stagger": 0.3,

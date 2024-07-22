@@ -24,7 +24,13 @@ class CustomConfiguration(Hashable, LLMConfig):
     _access_key: str
     _secret_key: str
     _token: str
-    
+
+    _model: str
+    _tokens_per_minute: int | None
+    _requests_per_minute: int | None
+    _concurrent_requests: int | None
+
+    _raw_config: dict
 
     def __init__(
         self,
@@ -64,25 +70,51 @@ class CustomConfiguration(Hashable, LLMConfig):
                 return value > 0
             return cast(bool | None, config.get(key))
 
-        self.access_key = lookup_str("ak")
-        self.secret_key = lookup_str("sk")
-        self.token = lookup_str("token")
+        self._access_key = lookup_str("ak")
+        self._secret_key = lookup_str("sk")
+        self._token = lookup_str("token")
+
+        self._model = lookup_required("model")
+        self._tokens_per_minute = lookup_int("tokens_per_minute")
+        self._requests_per_minute = lookup_int("requests_per_minute")
+        self._concurrent_requests = lookup_int("concurrent_requests")
+
         self._raw_config = config
 
     @property
     def access_key(self) -> str:
         """API key property definition."""
-        return self.access_key
+        return self._access_key
 
     @property
     def secret_key(self) -> str:
         """Model property definition."""
-        return self.secret_key
+        return self._secret_key
 
     @property
     def token(self) -> str | None:
         """Deployment name property definition."""
-        return self.token
+        return self._token
+    
+    @property
+    def model(self) -> str:
+        """Model property definition."""
+        return self._model
+    
+    @property
+    def tokens_per_minute(self) -> int | None:
+        """Tokens per minute property definition."""
+        return self._tokens_per_minute
+
+    @property
+    def requests_per_minute(self) -> int | None:
+        """Requests per minute property definition."""
+        return self._requests_per_minute
+
+    @property
+    def concurrent_requests(self) -> int | None:
+        """Concurrent requests property definition."""
+        return self._concurrent_requests
     
     @property
     def raw_config(self) -> dict:

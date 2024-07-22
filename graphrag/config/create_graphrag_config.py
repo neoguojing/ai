@@ -83,6 +83,9 @@ def create_graphrag_config(
             llm_type = LLMType(llm_type) if llm_type else base.type
             api_key = reader.str(Fragment.api_key) or base.api_key
             api_base = reader.str(Fragment.api_base) or base.api_base
+            ak = reader.str(Fragment.ak) or base.ak
+            sk = reader.str(Fragment.sk) or base.sk
+            token = reader.str(Fragment.token) or base.token
             cognitive_services_endpoint = (
                 reader.str(Fragment.cognitive_services_endpoint)
                 or base.cognitive_services_endpoint
@@ -104,6 +107,9 @@ def create_graphrag_config(
                 sleep_on_rate_limit = base.sleep_on_rate_limit_recommendation
 
             return LLMParameters(
+                ak=ak,
+                sk=sk,
+                token=token,
                 api_key=api_key,
                 type=llm_type,
                 api_base=api_base,
@@ -215,6 +221,9 @@ def create_graphrag_config(
     fallback_oai_org = env("OPENAI_ORG_ID", None)
     fallback_oai_base = env("OPENAI_BASE_URL", None)
     fallback_oai_version = env("OPENAI_API_VERSION", None)
+    env_ak = env("ACCESS_KEY", None)
+    env_sk = env("SECRET_KEY", None)
+    env_token = env("TOKEN", None)
 
     with reader.envvar_prefix(Section.graphrag), reader.use(values):
         async_mode = reader.str(Fragment.async_mode)
@@ -231,6 +240,9 @@ def create_graphrag_config(
                 llm_type = reader.str(Fragment.type)
                 llm_type = LLMType(llm_type) if llm_type else defs.LLM_TYPE
                 api_key = reader.str(Fragment.api_key) or fallback_oai_key
+                ak = reader.str(Fragment.ak) or env_ak
+                sk = reader.str(Fragment.sk) or env_sk
+                token = reader.str(Fragment.token) or env_token
                 api_organization = (
                     reader.str(Fragment.api_organization) or fallback_oai_org
                 )
@@ -255,6 +267,9 @@ def create_graphrag_config(
                     sleep_on_rate_limit = defs.LLM_SLEEP_ON_RATE_LIMIT_RECOMMENDATION
 
                 llm_model = LLMParameters(
+                    ak=ak,
+                    sk=sk,
+                    token=token,
                     api_key=api_key,
                     api_base=api_base,
                     api_version=api_version,
@@ -556,7 +571,9 @@ def create_graphrag_config(
 
 class Fragment(str, Enum):
     """Configuration Fragments."""
-
+    ak = "ACCESS_KEY"
+    sk = "SECRET_KEY"
+    token = "TOKEN"
     api_base = "API_BASE"
     api_key = "API_KEY"
     api_version = "API_VERSION"

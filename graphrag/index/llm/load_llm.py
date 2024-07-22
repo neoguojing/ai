@@ -295,8 +295,8 @@ def _create_custom_chat_llm(
     cache: LLMCache,
 ) -> CompletionLLM:
     """Create an openAI chat llm."""
-    limiter = _create_limiter(configuration)
-    semaphore = _create_semaphore(configuration)
+    limiter = None
+    semaphore = None
     return create_custom_llm(
         configuration, cache, limiter, semaphore, on_error=on_error
     )
@@ -307,8 +307,8 @@ def _create_custom_embeddings_llm(
     cache: LLMCache,
 ) -> EmbeddingLLM:
     """Create an openAI embeddings llm."""
-    limiter = _create_limiter(configuration)
-    semaphore = _create_semaphore(configuration)
+    limiter = None
+    semaphore = None
     return create_custom_embedding_llm(
         configuration, cache, limiter, semaphore, on_error=on_error
     )

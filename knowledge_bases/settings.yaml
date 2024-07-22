@@ -2,9 +2,13 @@
 encoding_model: cl100k_base
 skip_workflows: []
 llm:
-  api_key: ${GRAPHRAG_API_KEY}
-  type: openai_chat # or azure_openai_chat
-  model: gpt-4-turbo-preview
+  ak: ${ACCESS_KEY}
+  sk: ${SECRET_KEY}
+  # api_key: ${GRAPHRAG_API_KEY}
+  # type: openai_chat # or azure_openai_chat
+  type: custom_chat
+  # model: gpt-4-turbo-preview
+  model: wenxin
   model_supports_json: true # recommended if this is available for your model.
   # max_tokens: 4000
   # request_timeout: 180.0
@@ -29,8 +33,9 @@ embeddings:
   ## parallelization: override the global parallelization settings for embeddings
   async_mode: threaded # or asyncio
   llm:
-    api_key: ${GRAPHRAG_API_KEY}
-    type: openai_embedding # or azure_openai_embedding
+    # api_key: ${GRAPHRAG_API_KEY}
+    # type: openai_embedding # or azure_openai_embedding
+    type: custom_embedding
     model: text-embedding-3-small
     # api_base: https://<instance>.openai.azure.com
     # api_version: 2024-02-15-preview

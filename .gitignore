@@ -6,3 +6,7 @@ knowledge_bases/ceshi .faiss
 knowledge_bases/ceshi .pkl
 __pycache__/config.cpython-312.pyc
 __pycache__/llm.cpython-312.pyc
+**/__pycache__/
+knowledge_bases/output/
+knowledge_bases/cache/
+knowledge_bases/input/

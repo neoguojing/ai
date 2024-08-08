@@ -1,27 +1,23 @@
-# Use an official Python runtime as a parent image
-# FROM guojingneo/pytorch-tensorflow-notebook:latest
-FROM guojingneo/pytorch-notebook:latest
+# 使用指定的基础镜像
+FROM pytorch/pytorch:2.2.2-cuda12.1-cudnn8-runtime
 
-# RUN pip install cython
-# RUN pip install pycocotools
-RUN pip install -qr https://raw.githubusercontent.com/ultralytics/yolov5/master/requirements.txt
-RUN git clone https://github.com/dbolya/yolact.git && cd yolact && conda env create -f environment.yml \
-    && wget https://drive.google.com/file/d/1yp7ZbbDwvMiFJEq4ptVKTYTI2VeRDXl0/view?usp=sharing -fR -O yolact_resnet50.pth  
+# 更新 apt-get 并安装依赖
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends && \
+    apt-get install -y git
 
-# Set the working directory to /app
-WORKDIR /workspace
+COPY . /workspace
+# 安装 Python 依赖
+RUN pip install --no-cache-dir -r requirements-docker.txt
 
-ENV DATASET_PREFIX=/workspace/dataset/
+# 设置环境变量
+ENV PYTHONUNBUFFERED=1
 
-# Copy the current directory contents into the container at /app
-# COPY . /workspace
+# 暴露应用的端口，如果有需要，可以在这里指定
+# EXPOSE 8000
 
-# Install any needed packages specified in requirements.txt
-# RUN pip install --trusted-host pypi.python.org -r requirements.txt
+# 复制当前目录所有文件到容器的工作目录
 
-# Make port 80 available to the world outside this container
-EXPOSE 80
-
-
-# Run app.py when the container launches
-# CMD ["python", "app.py"]
+WORKDIR /workspace/detectron/demo
+# 设置容器启动时执行的命令
+CMD ["python", "main.py"]

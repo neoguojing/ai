@@ -1,6 +1,8 @@
 # Define variables for the image name and tag
 IMAGE_NAME = guojingneo/ai-world
-IMAGE_TAG = latest
+IMAGE_TAG = detection2
+
+GIT_COMMIT=$(shell git rev-parse --short HEAD)
 
 BASE_IMAGE_NAME = guojingneo/pytorch-tensorflow-notebook
 BASE_IMAGE_TAG = latest
@@ -9,19 +11,19 @@ pwd := $(shell pwd)
 
 # Define the build command
 build:
-	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	docker build -t $(IMAGE_NAME):$(IMAGE_TAG)-$(GIT_COMMIT) .
 
 # Define the clean command
 clean:
-	docker rmi $(IMAGE_NAME):$(IMAGE_TAG)
+	docker rmi $(IMAGE_NAME):$(IMAGE_TAG)-$(GIT_COMMIT)
 
 # Define the push command
 push:
-	docker push $(IMAGE_NAME):$(IMAGE_TAG)
+	docker push $(IMAGE_NAME):$(IMAGE_TAG)-$(GIT_COMMIT)
 
 # Define the run command
 run:
-	docker run --gpus all -p 8888:8888 -v $(pwd):/workspace:rw --rm -it --name ai-world $(IMAGE_NAME):$(IMAGE_TAG)
+	docker run --gpus all -p 8888:8888 -v $(pwd):/workspace:rw --rm -it --name ai-world $(IMAGE_NAME):$(IMAGE_TAG)-$(GIT_COMMIT)
 
 # Define the base command
 base:

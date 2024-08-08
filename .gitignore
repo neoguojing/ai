@@ -2,3 +2,9 @@
 __pycache__/
 neo_albert_model/*
 alber_infence.csv
+detectron/demo/yolov8n-cls.pt
+detectron/demo/yolov8n-pose.pt
+detectron/demo/yolov8n-seg.pt
+detectron/demo/yolov8n.pt
+detectron/demo/0_0.jpg
+detectron/demo/sam_vit_b_01ec64.pth

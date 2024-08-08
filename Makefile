@@ -4,14 +4,21 @@ IMAGE_TAG = detection2
 
 GIT_COMMIT=$(shell git rev-parse --short HEAD)
 
-BASE_IMAGE_NAME = guojingneo/pytorch-tensorflow-notebook
+BASE_IMAGE_NAME = guojingneo/ai-base
 BASE_IMAGE_TAG = latest
 
 pwd := $(shell pwd)
 
+CUDA_AVAILABLE := $(shell which nvcc)
+ifneq ($(CUDA_AVAILABLE),)
+	HAS_CUDA = 1
+else
+	HAS_CUDA = 0
+endif
+
 # Define the build command
 build:
-	docker build -t $(IMAGE_NAME):$(IMAGE_TAG)-$(GIT_COMMIT) .
+	docker build -f ./Dockerfile.app -t $(IMAGE_NAME):$(IMAGE_TAG)-$(GIT_COMMIT) .
 
 # Define the clean command
 clean:
@@ -23,12 +30,15 @@ push:
 
 # Define the run command
 run:
-	docker run --gpus all -p 8888:8888 -v $(pwd):/workspace:rw --rm -it --name ai-world $(IMAGE_NAME):$(IMAGE_TAG)-$(GIT_COMMIT)
-
+	@if [ "$(HAS_CUDA)" -eq "1" ]; then \
+		docker run --gpus all -p 7860:7860 -v $(HOME)/.cache/huggingface:$(HOME)/.cache/huggingface -v $(HOME)/.deepface:$(HOME)/.deepface --rm -it --name ai-world $(IMAGE_NAME):$(IMAGE_TAG)-$(GIT_COMMIT); \
+	else \
+		docker run -p 7860:7860 -v $(HOME)/.cache/huggingface:$(HOME)/.cache/huggingface -v $(HOME)/.deepface:$(HOME)/.deepface --rm -it --name ai-world $(IMAGE_NAME):$(IMAGE_TAG)-$(GIT_COMMIT); \
+	fi
 # Define the base command
 base:
-	docker build -t $(BASE_IMAGE_NAME):$(BASE_IMAGE_TAG) ./deploy/
-	docker push $(BASE_IMAGE_NAME):$(BASE_IMAGE_TAG)
+	docker build -f ./deploy/Dockerfile.base -t $(BASE_IMAGE_NAME):$(BASE_IMAGE_TAG) .
+	# docker push $(BASE_IMAGE_NAME):$(BASE_IMAGE_TAG)
 
 
 

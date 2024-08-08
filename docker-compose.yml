@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  ai-world:
+    image: ${IMAGE_NAME}:${IMAGE_TAG}-${GIT_COMMIT}
+    ports:
+      - "7860:7860"
+    volumes:
+      - ${HOME}/.cache/huggingface:/root/.cache/huggingface
+      - ${HOME}/.deepface:/root/.deepface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    restart: no

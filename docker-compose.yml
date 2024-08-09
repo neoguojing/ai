@@ -15,4 +15,4 @@ services:
             - capabilities: [gpu]
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
-    restart: no
+    restart: yes

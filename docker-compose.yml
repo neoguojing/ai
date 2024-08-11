@@ -8,7 +8,8 @@ services:
     volumes:
       - /data/.cache:/root/.cache
       - /data/.deepface:/root/.deepface
-      - /data/.torch/：/root/.torch
+      - /data/.torch:/root/.torch
+      - /data/gradio:/tmp/gradio
     deploy:
       resources:
         reservations:
@@ -16,4 +17,4 @@ services:
             - capabilities: [gpu]
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
-    restart: yes
+    restart: always

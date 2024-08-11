@@ -527,4 +527,4 @@ def do_search(selected_dbs,user_input):
 if __name__ == "__main__":
     demo = create_ui()
     demo.queue()
-    demo.launch()
+    demo.launch(server_name="0.0.0.0")

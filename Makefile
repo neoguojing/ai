@@ -30,10 +30,11 @@ push:
 
 # Define the run command
 run:
+	@echo $(HAS_CUDA)
 	@if [ "$(HAS_CUDA)" -eq "1" ]; then \
-		docker run --gpus all -p 7860:7860 -v $(HOME)/.cache/huggingface:$(HOME)/.cache/huggingface -v $(HOME)/.deepface:$(HOME)/.deepface --rm -it --name ai-world $(IMAGE_NAME):$(IMAGE_TAG)-$(GIT_COMMIT); \
+		docker run --gpus all -p 7860:7860 -v $(HOME)/.cache/huggingface:/root/.cache/huggingface -v $(HOME)/.deepface:/root/.deepface --rm -it --name ai-world $(IMAGE_NAME):$(IMAGE_TAG)-$(GIT_COMMIT); \
 	else \
-		docker run -p 7860:7860 -v $(HOME)/.cache/huggingface:$(HOME)/.cache/huggingface -v $(HOME)/.deepface:$(HOME)/.deepface --rm -it --name ai-world $(IMAGE_NAME):$(IMAGE_TAG)-$(GIT_COMMIT); \
+		docker run -p 7860:7860 -v $(HOME)/.cache/huggingface:/root/.cache/huggingface -v $(HOME)/.deepface:/root/.deepface --rm -it --name ai-world $(IMAGE_NAME):$(IMAGE_TAG)-$(GIT_COMMIT); \
 	fi
 # Define the base command
 base:

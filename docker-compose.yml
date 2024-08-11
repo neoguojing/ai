@@ -2,12 +2,13 @@ version: '3.8'
 
 services:
   ai-world:
-    image: ${IMAGE_NAME}:${IMAGE_TAG}-${GIT_COMMIT}
+    image: 192.168.1.7:5000/ai-world:detection2-2a7724d
     ports:
       - "7860:7860"
     volumes:
-      - ${HOME}/.cache/huggingface:/root/.cache/huggingface
-      - ${HOME}/.deepface:/root/.deepface
+      - /data/.cache:/root/.cache
+      - /data/.deepface:/root/.deepface
+      - /data/.torch/：/root/.torch
     deploy:
       resources:
         reservations:

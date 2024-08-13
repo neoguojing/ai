@@ -142,14 +142,21 @@ def create_ui():
         with gr.Tab("SAM everything"): 
             with gr.Row():
                 with gr.Column(scale=2):
+                    components["sam_version"] = gr.Dropdown(
+                                    ["1","2"],value="1",
+                                    label="sam版本",interactive=True
+                            )
+                with gr.Column(scale=2):
                     components["sam_submit_btn"] = gr.Button(value="解析")
             with gr.Row():
                 with gr.Column(scale=2):
                     with gr.Group():
                         components["sam_input"] = ImagePrompter(elem_id='sam-input',label='输入',type="pil")
+                        components["sam_video_input"] = gr.Video(label='视频输入',visible=False,interactive=True)
                 with gr.Column(scale=2):
                     with gr.Group():
                         components["sam_output"] = gr.Gallery(elem_id='sam_output',label='输出',columns=1,interactive=False)
+                        components["sam_video_output"] = gr.PlayableVideo(label='输出',visible=False)
 
         with gr.Tab("知识库"):
             with gr.Row():
@@ -254,8 +261,14 @@ def create_event_handlers():
         do_face_refernce,gradio('face_type','face_input'),gradio("face_output",'face_image_output')
     )
 
+    components["sam_version"].change(
+        do_sam_version_chage, 
+        gradio('sam_version'),
+        gradio('sam_input','sam_video_input','sam_output','sam_video_output')
+    )
+
     components["sam_submit_btn"].click(
-        do_sam_everything,gradio('sam_input'),gradio("sam_output")
+        do_sam_everything,gradio('sam_input','sam_video_input','sam_version'),gradio("sam_output","sam_video_output")
     )
 
     components["db_submit_btn"].click(
@@ -385,8 +398,28 @@ def do_face_refernce(algo_type,input_images):
 
     return out,faces
 
-def do_sam_everything(im):
-    sam_anything = SamAnything()
+def do_sam_version_chage(value):
+    print("do_sam_version_chage:",value)
+    if value.strip() == "1":
+        components["sam_input"] = ImagePrompter(elem_id='sam-input',label='输入',type="pil")
+        components["sam_video_input"] = gr.Video(label='视频输入',visible=False,interactive=True)
+        components["sam_output"] = gr.Gallery(elem_id='sam_output',label='输出',columns=1,interactive=False)
+        components["sam_video_output"] = gr.PlayableVideo(label='输出',visible=False)
+    elif value.strip() == "2":
+        components["sam_input"] = ImagePrompter(elem_id='sam-input',label='输入',type="pil")
+        components["sam_video_input"] = gr.Video(label='视频输入',visible=True,interactive=True)
+        components["sam_output"] = gr.Gallery(elem_id='sam_output',label='输出',columns=1,interactive=False)
+        components["sam_video_output"] = gr.PlayableVideo(label='输出',visible=True)
+
+    return components["sam_input"],components["sam_video_input"],components["sam_output"],components["sam_video_output"]
+
+
+def do_sam_everything(im,video,version):
+    sam_anything = None
+    if version == "1":
+        sam_anything = SamAnything()
+    elif version == "2":
+        sam_anything = None
     print(im)
     image_pil = im['image']
     points = im['points']

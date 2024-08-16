@@ -3,9 +3,20 @@ import gradio as gr
 from gradio_image_prompter import ImagePrompter
 from retriever import knowledgeBase
 import sys
+import os
 sys.path.append("..")
 from event_handler import components,gradio
 from event_handler import create_event_handlers
+
+
+from pathlib import Path
+
+# 获取当前文件的绝对路径
+current_file_path = Path(__file__).resolve()
+
+# 获取当前文件所在的目录
+current_directory = current_file_path.parent
+print(current_directory)
 
 def create_ui():
     with gr.Blocks() as demo:
@@ -25,11 +36,13 @@ def create_ui():
                             components["image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入')
                             components["base_examples"] = gr.Examples(
                                 examples=[
-                                    ["./examples/horse.png"],
-                                    ["./examples/view.jpeg"],
-                                    ["./examples/cat.jpg"],
+                                    [os.path.join(current_directory,"examples/horse.png")],
+                                    [os.path.join(current_directory,"examples/view.jpeg")],
+                                    [os.path.join(current_directory,"examples/cat.jpg")],
                                 ],
                                 inputs=components["image_input"],
+                                examples_per_page=3,
+                                label="图片示例"
                             )
                 with gr.Column(scale=2):
                     with gr.Row():
@@ -59,15 +72,24 @@ def create_ui():
                         with gr.Group():
                             components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入')
                             components["yolo_video_input"] = gr.Video(label='输入',visible=False,interactive=True)
-                            components["yolo_examples"] = gr.Examples(
+                            components["yolo_image_examples"] = gr.Examples(
                                 examples=[
-                                    ["./examples/horse.png",None],
-                                    ["./examples/view.jpeg",None],
-                                    ["./examples/cat.jpg",None],
-                                    [None,"./examples/gym.mp4"],
-                                    [None,"./examples/traffic.mp4"],
+                                    [os.path.join(current_directory,"examples/horse.png")],
+                                    [os.path.join(current_directory,"examples/view.jpeg")],
+                                    [os.path.join(current_directory,"examples/cat.jpg")],
                                 ],
-                                inputs=[components["yolo_image_input"],components["yolo_image_input"]],
+                                inputs=[components["yolo_image_input"]],
+                                examples_per_page=3,
+                                label="图片示例"
+                            )
+                            components["yolo_video_examples"] = gr.Examples(
+                                examples=[
+                                    [os.path.join(current_directory,"examples/gym.mp4")],
+                                    [os.path.join(current_directory,"examples/traffic.mp4")],
+                                ],
+                                inputs=[components["yolo_video_input"]],
+                                examples_per_page=2,
+                                label="视频示例"
                             )
         
                 with gr.Column(scale=2):
@@ -97,10 +119,12 @@ def create_ui():
                             components["face_input"] = gr.Gallery(elem_id='face-input',label='输入',columns=2,type="pil")
                             components["face_examples"] = gr.Examples(
                                 examples=[
-                                    ["./examples/face1.jpeg"],
-                                    ["./examples/face2.jpeg"],
+                                    [[(os.path.join(current_directory,"examples/face1.jpeg"),"face1")]],
+                                    [[(os.path.join(current_directory,"examples/face2.jpeg"),"face2")]],
                                 ],
-                                inputs=components["face_input"],
+                                inputs=[components["face_input"]],
+                                examples_per_page=2,
+                                label="图片示例"
                             )
                 with gr.Column(scale=2):
                     with gr.Row():
@@ -110,6 +134,37 @@ def create_ui():
             with gr.Row():
                 with gr.Group():
                     components["face_output"] = gr.JSON(label="推理结果")
+        with gr.Tab("OCR"):
+            with gr.Row():
+                with gr.Column(scale=2):
+                        components["ocr_type"] = gr.Dropdown(
+                                        ["OCR","Easy"],value="Easy",
+                                        label="算法类别",interactive=True
+                                )
+                with gr.Column(scale=2):
+                    components["submit_ocr_btn"] = gr.Button(value="解析")
+
+            with gr.Row():
+                with gr.Column(scale=2):
+                    with gr.Row(elem_id=''):
+                        with gr.Group():
+                            components["ocr_input"] = gr.Image(elem_id='ocr-input',label='输入',type="pil")
+                            components["ocr_examples"] = gr.Examples(
+                                examples=[
+                                    [os.path.join(current_directory,"examples/json.png")],
+                                    [os.path.join(current_directory,"examples/text.jpeg")],
+                                ],
+                                inputs=[components["ocr_input"]],
+                                examples_per_page=2,
+                                label="图片示例"
+                            )
+                with gr.Column(scale=2):
+                    with gr.Row():
+                        with gr.Group():
+                            components["ocr_output"] = gr.Image(elem_id='ocr_output',label='输出',interactive=False,type="pil")
+            with gr.Row():
+                with gr.Group():
+                    components["ocr_json_output"] = gr.JSON(label="推理结果")
         with gr.Tab("SAM everything"): 
             with gr.Row():
                 with gr.Column(scale=2):
@@ -124,14 +179,23 @@ def create_ui():
                     with gr.Group():
                         components["sam_input"] = ImagePrompter(elem_id='sam-input',label='输入',type="pil")
                         components["sam_video_input"] = gr.Video(label='视频输入',visible=False,interactive=True)
-                        components["face_examples"] = gr.Examples(
-                                examples=[
-                                    ["./examples/horse.png",None],
-                                    ["./examples/view.jpeg",None],
-                                    [None,"./examples/traffic.mp4"],
-                                ],
-                                inputs=[components["sam_input"],components["sam_video_input"]],
-                            )
+                        components["sam_image_examples"] = gr.Examples(
+                            examples=[
+                                [{'image': os.path.join(current_directory,"examples/horse.png"), 'points': []}],
+                                [{'image': os.path.join(current_directory,"examples/view.jpeg"), 'points': []}],
+                            ],
+                            inputs=[components["sam_input"]],
+                            examples_per_page=2,
+                            label="图片示例"
+                        )
+                        components["sam_video_examples"] = gr.Examples(
+                            examples=[
+                                [os.path.join(current_directory,"examples/traffic.mp4")],
+                            ],
+                            inputs=[components["sam_video_input"]],
+                            examples_per_page=1,
+                            label="视频示例"
+                        )
                 with gr.Column(scale=2):
                     with gr.Group():
                         components["sam_output"] = gr.Gallery(elem_id='sam_output',label='输出',columns=1,interactive=False)

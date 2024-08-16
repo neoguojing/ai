@@ -11,6 +11,7 @@ from face import FaceAlgo
 from sam_everything import SamAnything
 from retriever import knowledgeBase
 from yolo_predictor import YOLOPredictor
+from ocr import do_ocr
 params = {
     "algo_type": None,
     "input_image":None
@@ -108,6 +109,10 @@ def create_event_handlers():
 
     components["sam_submit_btn"].click(
         do_sam_everything,gradio('sam_input','sam_video_input','sam_version'),gradio("sam_output","sam_video_output")
+    )
+
+    components["submit_ocr_btn"].click(
+        do_ocr,gradio('ocr_type','ocr_input'),gradio("ocr_output","ocr_json_output")
     )
 
     components["db_submit_btn"].click(
@@ -254,12 +259,13 @@ def do_sam_version_chage(value):
 
 
 def do_sam_everything(im,video,version):
+    print(im)
     sam_anything = None
     if version == "1":
         sam_anything = SamAnything()
     elif version == "2":
         sam_anything = None
-    print(im)
+    
     image_pil = im['image']
     points = im['points']
     images = None

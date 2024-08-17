@@ -8,6 +8,8 @@ from detectron2.utils.visualizer import Visualizer
 import numpy as np
 from skimage import measure
 import threading
+import cv2
+import os
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -134,7 +136,7 @@ class SamAnything:
         self.predictor = SamPredictor(self.sam)
         self.mask_generator = SamAutomaticMaskGenerator(self.sam)
 
-    def seg_with_promp(self, input_image, point_coords=None, box=None):
+    def seg_with_promp(self, input_image=None,video_dir=None, point_coords=None, box=None):
         if isinstance(input_image, Image.Image):
             input_image = pil_image_to_numpy(input_image)
         point_labels = None
@@ -202,7 +204,7 @@ class SamAnything:
         return contours
 
     @staticmethod
-    def visimage_to_pil(visimages, need_save=True, idx=0):
+    def visimage_to_pil(visimages, need_save=False, idx=0):
         pil_images = []
         for i, visimage in enumerate(visimages):
             visualized_image = visimage.get_image()
@@ -243,7 +245,7 @@ class SamAnything2:
         self.predictor = SAM2ImagePredictor.from_pretrained("facebook/sam2-hiera-small")
         self.video_predictor = SAM2VideoPredictor.from_pretrained("facebook/sam2-hiera-small")
 
-    def seg_with_promp(self, input_image, video_dir=None,point_coords=None, box=None):
+    def seg_with_promp(self, input_image=None, video_dir=None,point_coords=None, box=None):
         point_labels = None
         if point_coords is not None:
             point_labels = np.ones(point_coords.shape[0], dtype=int)
@@ -262,6 +264,10 @@ class SamAnything2:
             yield pil_images,None
         
         if video_dir is not None:
+            video_dir,frame_names,fps,frame_size = self.extract_frames(video_dir)
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 使用 'mp4v' 编码器
+            out_video_dir = os.path.join(video_dir,"after_inference.mp4")
+            video_writer = cv2.VideoWriter(out_video_dir, fourcc, fps, frame_size)
             with torch.inference_mode(), torch.autocast(self.device, dtype=torch.bfloat16):
                 state = self.video_predictor.init_state(video_path=video_dir)
                 
@@ -280,12 +286,20 @@ class SamAnything2:
                 video_segments = {} 
                 # propagate the prompts to get masklets throughout the video
                 for out_frame_idx, out_obj_ids, out_mask_logits in self.video_predictor.propagate_in_video(state):
-                    print(frame_idx,object_ids)
                     video_segments[out_frame_idx] = {
                         out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
                         for i, out_obj_id in enumerate(out_obj_ids)
                     }
-                    yield pil_images,None
+                    mask = (out_mask_logits > 0.0).cpu().numpy()
+                    frame = cv2.imread(os.path.join(video_dir, frame_names[out_frame_idx]))
+                    print(out_frame_idx,out_obj_ids,out_mask_logits.shape,frame.shape)
+                    np_image = self.draw_bitmask(frame, mask,pil_image=False)
+                    video_writer.write(np_image)
+                    if out_frame_idx % 30 == 0:
+                        pil_image = Image.fromarray(np_image)
+                        yield [pil_image],None
+                yield None,out_video_dir
+            video_writer.release()
         print("seg_with_promp:", masks.shape)
         
 
@@ -299,7 +313,35 @@ class SamAnything2:
                 masks, _, _ = self.predictor.predict(multimask_output=False)
                 pil_images = self.draw_bitmask(input_image, masks)
             yield pil_images,None
+    
+
+    def extract_frames(self,video_path):
+        output_dir = os.path.dirname(video_path)
+        # 打开视频文件
+        cap = cv2.VideoCapture(video_path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        # 获取视频帧尺寸
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        frame_size = (frame_width, frame_height)
+        frame_names = []
+        count = 0
+        while True:
+            # 读取视频帧
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            # 构建保存帧的文件名
+            filename = f"{output_dir}/{count:05d}.jpg"
+            # 保存帧为图片
+            cv2.imwrite(filename, frame)
+            count += 1
+            frame_names.append(filename)
         
+        # 释放视频对象
+        cap.release()
+        return output_dir,filename,fps,frame_size
 
     @staticmethod
     def draw_bitmask_split(np_image, masks):
@@ -313,7 +355,7 @@ class SamAnything2:
         return pil_images
 
     @staticmethod
-    def draw_bitmask(np_image, masks):
+    def draw_bitmask(np_image, masks,pil_image=True):
         view = Visualizer(np_image)
         for obj in masks:
             if "segmentation" in obj:
@@ -323,8 +365,11 @@ class SamAnything2:
                 view.draw_binary_mask(obj)
         
         vis_image = view.get_output()
-        pil_images = SamAnything.visimage_to_pil([vis_image])
-        return pil_images
+        if pil_image:
+            pil_images = SamAnything.visimage_to_pil([vis_image])
+            return pil_images
+        
+        return vis_image.get_image()
 
     @staticmethod
     def draw_polygon(np_image, masks):

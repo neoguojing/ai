@@ -197,9 +197,10 @@ def create_ui():
                         components["sam_video_examples"] = gr.Examples(
                             examples=[
                                 [os.path.join(current_directory,"examples/traffic.mp4")],
+                                [os.path.join(current_directory,"examples/gym.mp4")],
                             ],
                             inputs=[components["sam_video_input"]],
-                            examples_per_page=1,
+                            examples_per_page=4,
                             label="视频示例"
                         )
                 with gr.Column(scale=2):

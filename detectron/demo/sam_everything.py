@@ -134,14 +134,14 @@ class SamAnything:
         self.predictor = SamPredictor(self.sam)
         self.mask_generator = SamAutomaticMaskGenerator(self.sam)
 
-    def seg_with_promp(self, imput_image, point_coords=None, box=None):
-        if isinstance(imput_image, Image.Image):
-            imput_image = pil_image_to_numpy(imput_image)
+    def seg_with_promp(self, input_image, point_coords=None, box=None):
+        if isinstance(input_image, Image.Image):
+            input_image = pil_image_to_numpy(input_image)
         point_labels = None
         if point_coords is not None:
             point_labels = np.ones(point_coords.shape[0])
 
-        self.predictor.set_image(imput_image)
+        self.predictor.set_image(input_image)
         masks = None
 
         if box is not None:
@@ -150,15 +150,15 @@ class SamAnything:
             masks, _, _ = self.predictor.predict(point_coords=point_coords, point_labels=point_labels)
 
         print("seg_with_promp:", masks.shape)
-        pil_images = self.draw_bitmask(imput_image, masks)
+        pil_images = self.draw_bitmask(input_image, masks)
         return masks, pil_images
 
-    def seg_all(self, imput_image):
-        if isinstance(imput_image, Image.Image):
-            imput_image = pil_image_to_numpy(imput_image)
+    def seg_all(self, iput_image):
+        if isinstance(iput_image, Image.Image):
+            iput_image = pil_image_to_numpy(iput_image)
 
-        masks = self.mask_generator.generate(imput_image)
-        pil_images = self.draw_bitmask(imput_image, masks)
+        masks = self.mask_generator.generate(iput_image)
+        pil_images = self.draw_bitmask(iput_image, masks)
         return masks, pil_images
 
     @staticmethod
@@ -236,16 +236,17 @@ class SamAnything2:
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = super(SamAnything, cls).__new__(cls)
+                    cls._instance = super(SamAnything2, cls).__new__(cls)
                     cls._instance._initialize(*args, **kwargs)
         return cls._instance
 
     def _initialize(self, checkpoint_path="./sam_vit_b_01ec64.pth"):
         import torch
         from sam2.sam2_image_predictor import SAM2ImagePredictor
+        from sam2.sam2_video_predictor import SAM2VideoPredictor
 
         self.predictor = SAM2ImagePredictor.from_pretrained("facebook/sam2-hiera-small")
-        self.video_predictor = SAM2VideoPredictor.from_pretrained("acebook/sam2-hiera-small")
+        self.video_predictor = SAM2VideoPredictor.from_pretrained("facebook/sam2-hiera-small")
 
     def seg_with_promp(self, input_image, video_dir=None,point_coords=None, box=None):
         point_labels = None

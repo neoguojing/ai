@@ -8,7 +8,7 @@ sys.path.append("..")
 from detectron2.config import get_cfg
 from inference import ModelFactory
 from face import FaceAlgo
-from sam_everything import SamAnything
+from sam_everything import SamAnything,SamAnything2
 from retriever import knowledgeBase
 from yolo_predictor import YOLOPredictor
 from ocr import do_ocr
@@ -264,7 +264,7 @@ def do_sam_everything(im,video,version):
     if version == "1":
         sam_anything = SamAnything()
     elif version == "2":
-        sam_anything = None
+        sam_anything = SamAnything2()
     
     image_pil = im['image']
     points = im['points']
@@ -290,7 +290,7 @@ def do_sam_everything(im,video,version):
             print("point_coords:",coords.shape)
             _, images = sam_anything.seg_with_promp(image_pil,point_coords=coords)
         
-    return images
+    return images,None
 
 def point_to_mask(pil_image):
     # 遍历每个像素

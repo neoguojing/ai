@@ -268,29 +268,22 @@ def do_sam_everything(im,video,version):
     
     image_pil = im['image']
     points = im['points']
-    images = None
+
     if points is None or len(points) == 0:
-        _, images = sam_anything.seg_all(image_pil)
+        yield from sam_anything.seg_all(image_pil)
     else:
-        point_coords = []
+        point_coords = None
         box = None
         for item in points:
             if item[2] == 1:
-                # 点类型
-                point_coords.append([item[0],item[1]])
+                # Let's add a positive click at (x, y) = (210, 350) to get started
+                point_coords = np.array([[item[0],item[1]]], dtype=np.float32)
             else:
                 # box类型,只使用最后一个box
                 box = [item[0],item[1],item[3],item[4]]
-                box = np.array(box)
-        
-        if box is not None:
-            _, images = sam_anything.seg_with_promp(image_pil,box=box)
-        else:
-            coords = np.array(point_coords)
-            print("point_coords:",coords.shape)
-            _, images = sam_anything.seg_with_promp(image_pil,point_coords=coords)
-        
-    return images,None
+                box = np.array(box, dtype=np.float32)
+
+            yield from sam_anything.seg_with_promp(image_pil,point_coords=point_coords,box=box)
 
 def point_to_mask(pil_image):
     # 遍历每个像素

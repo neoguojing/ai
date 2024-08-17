@@ -139,19 +139,14 @@ class SamAnything:
             input_image = pil_image_to_numpy(input_image)
         point_labels = None
         if point_coords is not None:
-            point_labels = np.ones(point_coords.shape[0])
+            point_labels = np.ones(point_coords.shape[0], dtype=int)
 
         self.predictor.set_image(input_image)
-        masks = None
-
-        if box is not None:
-            masks, _, _ = self.predictor.predict(box=box)
-        elif point_coords is not None and point_labels is not None:
-            masks, _, _ = self.predictor.predict(point_coords=point_coords, point_labels=point_labels)
+        masks, _, _ = self.predictor.predict(point_coords=point_coords, point_labels=point_labels,box=box)
 
         print("seg_with_promp:", masks.shape)
         pil_images = self.draw_bitmask(input_image, masks)
-        return masks, pil_images
+        yield pil_images,None
 
     def seg_all(self, iput_image):
         if isinstance(iput_image, Image.Image):
@@ -159,7 +154,7 @@ class SamAnything:
 
         masks = self.mask_generator.generate(iput_image)
         pil_images = self.draw_bitmask(iput_image, masks)
-        return masks, pil_images
+        yield pil_images,None
 
     @staticmethod
     def draw_bitmask_split(np_image, masks):
@@ -230,7 +225,7 @@ class SamAnything2:
     _instance = None
     _lock = threading.Lock()
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
@@ -251,20 +246,20 @@ class SamAnything2:
     def seg_with_promp(self, input_image, video_dir=None,point_coords=None, box=None):
         point_labels = None
         if point_coords is not None:
-            point_labels = np.ones(point_coords.shape[0])
-
+            point_labels = np.ones(point_coords.shape[0], dtype=int)
+        print("seg_with_promp prompt:",point_coords,point_labels,box)
         if input_image is not None:
-            if isinstance(input_image, Image.Image):
-                input_image = pil_image_to_numpy(input_image)
-                with torch.inference_mode(), torch.autocast(self.device, dtype=torch.bfloat16):
-                    self.predictor.set_image(input_image)
-                    masks, _, _ = self.predictor.predict(
-                        point_coords=point_coords,
-                        point_labels=point_labels,
-                        box=box,
-                        multimask_output=False)
-                    pil_images = self.draw_bitmask(input_image, masks)
-                return masks, pil_images
+            # if isinstance(input_image, Image.Image):
+            #     input_image = pil_image_to_numpy(input_image)
+            with torch.inference_mode(), torch.autocast(self.device, dtype=torch.bfloat16):
+                self.predictor.set_image(input_image)
+                masks, _, _ = self.predictor.predict(
+                    point_coords=point_coords,
+                    point_labels=point_labels,
+                    box=box,
+                    multimask_output=False)
+                pil_images = self.draw_bitmask(input_image, masks)
+            yield pil_images,None
         
         if video_dir is not None:
             with torch.inference_mode(), torch.autocast(self.device, dtype=torch.bfloat16):
@@ -273,18 +268,13 @@ class SamAnything2:
                 ann_frame_idx = 0  # the frame index we interact with
                 ann_obj_id = 1  # give a unique id to each object we interact with (it can be any integers)
 
-                # Let's add a positive click at (x, y) = (210, 350) to get started
-                points = np.array([[210, 350]], dtype=np.float32)
-                # for labels, `1` means positive click and `0` means negative click
-                labels = np.array([1], np.int32)
-
                 # add new prompts and instantly get the output on the same frame
                 frame_idx, object_ids, masks = self.video_predictor.add_new_points_or_box(
                     inference_state=state,
                     frame_idx=ann_frame_idx,
                     obj_id=ann_obj_id,
-                    points=points,
-                    labels=labels,
+                    points=point_coords,
+                    labels=point_labels,
                     box=box
                 )
                 video_segments = {} 
@@ -295,20 +285,20 @@ class SamAnything2:
                         out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
                         for i, out_obj_id in enumerate(out_obj_ids)
                     }
-
+                    yield pil_images,None
         print("seg_with_promp:", masks.shape)
-        return masks, pil_images
+        
 
     def seg_all(self, input_image):
         if input_image is not None:
-            if isinstance(input_image, Image.Image):
-                input_image = pil_image_to_numpy(input_image)
+            # if isinstance(input_image, Image.Image):
+            #     input_image = pil_image_to_numpy(input_image)
 
             with torch.inference_mode(), torch.autocast(self.device, dtype=torch.bfloat16):
                 self.predictor.set_image(input_image)
-                masks, _, _ = self.predictor.predict()
+                masks, _, _ = self.predictor.predict(multimask_output=False)
                 pil_images = self.draw_bitmask(input_image, masks)
-            return masks, pil_images
+            yield pil_images,None
         
 
     @staticmethod

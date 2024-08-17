@@ -199,7 +199,7 @@ class YOLOPredictor:
         def do_gym(frame):
             try:
                 tracks = self.model.track(frame, persist=True, show=False,verbose=False)
-                return gym_object.start_counting(frame, tracks,frame_count=20),tracks
+                return gym_object.start_counting(frame, tracks),tracks
             except TypeError as e:
                 # 捕获 AttributeError 异常，并打印错误信息
                 print(f"TypeError: {e}")

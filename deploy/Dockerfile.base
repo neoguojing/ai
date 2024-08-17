@@ -1,5 +1,5 @@
 # 使用指定的基础镜像
-FROM pytorch/pytorch:2.2.2-cuda12.1-cudnn8-runtime
+FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime
 
 # 更新 apt-get 并安装依赖
 # RUN apt-get update && \

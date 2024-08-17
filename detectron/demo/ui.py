@@ -39,9 +39,11 @@ def create_ui():
                                     [os.path.join(current_directory,"examples/horse.png")],
                                     [os.path.join(current_directory,"examples/view.jpeg")],
                                     [os.path.join(current_directory,"examples/cat.jpg")],
+                                    [os.path.join(current_directory,"examples/coco.jpg")],
+                                    [os.path.join(current_directory,"examples/seg2.jpeg")],
                                 ],
                                 inputs=components["image_input"],
-                                examples_per_page=3,
+                                examples_per_page=6,
                                 label="图片示例"
                             )
                 with gr.Column(scale=2):
@@ -77,9 +79,11 @@ def create_ui():
                                     [os.path.join(current_directory,"examples/horse.png")],
                                     [os.path.join(current_directory,"examples/view.jpeg")],
                                     [os.path.join(current_directory,"examples/cat.jpg")],
+                                    [os.path.join(current_directory,"examples/coco.jpg")],
+                                    [os.path.join(current_directory,"examples/seg2.jpeg")],
                                 ],
                                 inputs=[components["yolo_image_input"]],
-                                examples_per_page=3,
+                                examples_per_page=6,
                                 label="图片示例"
                             )
                             components["yolo_video_examples"] = gr.Examples(
@@ -88,7 +92,7 @@ def create_ui():
                                     [os.path.join(current_directory,"examples/traffic.mp4")],
                                 ],
                                 inputs=[components["yolo_video_input"]],
-                                examples_per_page=2,
+                                examples_per_page=4,
                                 label="视频示例"
                             )
         
@@ -119,11 +123,11 @@ def create_ui():
                             components["face_input"] = gr.Gallery(elem_id='face-input',label='输入',columns=2,type="pil")
                             components["face_examples"] = gr.Examples(
                                 examples=[
-                                    [[(os.path.join(current_directory,"examples/face1.jpeg"),"face1")]],
+                                    [[("face1",os.path.join(current_directory,"examples/face1.jpeg"))]],
                                     [[(os.path.join(current_directory,"examples/face2.jpeg"),"face2")]],
                                 ],
                                 inputs=[components["face_input"]],
-                                examples_per_page=2,
+                                examples_per_page=6,
                                 label="图片示例"
                             )
                 with gr.Column(scale=2):
@@ -155,7 +159,7 @@ def create_ui():
                                     [os.path.join(current_directory,"examples/text.jpeg")],
                                 ],
                                 inputs=[components["ocr_input"]],
-                                examples_per_page=2,
+                                examples_per_page=6,
                                 label="图片示例"
                             )
                 with gr.Column(scale=2):
@@ -183,9 +187,11 @@ def create_ui():
                             examples=[
                                 [{'image': os.path.join(current_directory,"examples/horse.png"), 'points': []}],
                                 [{'image': os.path.join(current_directory,"examples/view.jpeg"), 'points': []}],
+                                [{'image': os.path.join(current_directory,"examples/coco.jpg"), 'points': []}],
+                                [{'image': os.path.join(current_directory,"examples/seg2.jpeg"), 'points': []}],
                             ],
                             inputs=[components["sam_input"]],
-                            examples_per_page=2,
+                            examples_per_page=6,
                             label="图片示例"
                         )
                         components["sam_video_examples"] = gr.Examples(

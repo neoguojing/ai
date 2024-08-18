@@ -10,6 +10,9 @@ services:
       - /data/.deepface:/root/.deepface
       - /data/.torch:/root/.torch
       - /data/gradio:/tmp/gradio
+      - /data/gradio/examples:/workspace/detectron/demo/examples
+      - /data/gradio/output:/workspace/detectron/demo/output
+      - /data/gradio/knowledge_bases:/workspace/detectron/demo/knowledge_bases
     deploy:
       resources:
         reservations:

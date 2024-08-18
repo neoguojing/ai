@@ -98,7 +98,7 @@ def create_event_handlers():
     )
 
     components["face_submit_btn"].click(
-        do_face_refernce,gradio('face_type','face_input'),gradio("face_output",'face_image_output')
+        do_face_refernce,gradio('face_type','face_input','face_input2'),gradio("face_output",'face_image_output')
     )
 
     components["sam_version"].change(
@@ -220,25 +220,21 @@ def ui_by_facetype(face_type):
     print("ui_by_facetype",face_type)
 
 
-def do_face_refernce(algo_type,input_images):
-    print("input image",input_images)
+def do_face_refernce(algo_type,input_image,input_image1):
+    print("input image",input_image)
     print(algo_type)
 
-    if input_images is None:
+    if input_image is None:
         gr.Warning('请上传图片')
         return None,None
     
-    input1 = input_images[0][0]
-    input2 = None
     algo_type = face_algo_map[algo_type]
-    if algo_type == "compare" and len(input_images) >=2:
-        input2 = input_images[1][0]
-    elif algo_type == "compare" and len(input_images) < 2:
+    if algo_type == "compare" and input_image1 is None:
         gr.Warning('请上传两张图片')    
         return None,None
 
     m = FaceAlgo()  # pragma: no cover
-    out,faces = m.predict(pil_image=input1,pil_image1=input2,algo_type=algo_type)
+    out,faces = m.predict(pil_image=input_image,pil_image1=input_image1,algo_type=algo_type)
 
     return out,faces
 

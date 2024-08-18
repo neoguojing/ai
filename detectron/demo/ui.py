@@ -16,7 +16,9 @@ current_file_path = Path(__file__).resolve()
 
 # 获取当前文件所在的目录
 current_directory = current_file_path.parent
-print(current_directory)
+
+width = 713
+height = int(width / 1.618)
 
 def create_ui():
     with gr.Blocks() as demo:
@@ -33,7 +35,7 @@ def create_ui():
                 with gr.Column(scale=2):
                     with gr.Row(elem_id='audio-container'):
                         with gr.Group():
-                            components["image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入')
+                            components["image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入',width=width,height=height)
                             components["base_examples"] = gr.Examples(
                                 examples=[
                                     [os.path.join(current_directory,"examples/horse.png")],
@@ -49,7 +51,7 @@ def create_ui():
                 with gr.Column(scale=2):
                     with gr.Row():
                         with gr.Group():
-                            components["image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False)
+                            components["image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False,width=width,height=height)
 
             with gr.Row():
                 with gr.Group():
@@ -72,8 +74,8 @@ def create_ui():
                         with gr.Column(scale=2):
                             components["yolo_dist_b"] = gr.Number(value=0,label="B",visible=False)
                         with gr.Group():
-                            components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入')
-                            components["yolo_video_input"] = gr.Video(label='输入',visible=False,interactive=True)
+                            components["yolo_image_input"] = gr.Image(type="pil",elem_id='image-input',label='输入',width=width,height=height)
+                            components["yolo_video_input"] = gr.Video(label='输入',visible=False,interactive=True,width=width,height=height)
                             components["yolo_image_examples"] = gr.Examples(
                                 examples=[
                                     [os.path.join(current_directory,"examples/horse.png")],
@@ -99,8 +101,8 @@ def create_ui():
                 with gr.Column(scale=2):
                     with gr.Row():
                         with gr.Group():
-                            components["yolo_image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False)
-                            components["yolo_video_output"] = gr.PlayableVideo(label='输出',visible=False)
+                            components["yolo_image_output"] = gr.Image(type="pil",elem_id='image-output',label='输出',interactive=False,width=width,height=height)
+                            components["yolo_video_output"] = gr.PlayableVideo(label='输出',visible=False,width=width,height=height)
                             components["yolo_crop_output"] = gr.Gallery(type="pil",elem_id='crop-output',label='裁剪',interactive=False,visible=True)
 
             with gr.Row():
@@ -120,11 +122,12 @@ def create_ui():
                 with gr.Column(scale=2):
                     with gr.Row(elem_id=''):
                         with gr.Group():
-                            components["face_input"] = gr.Gallery(elem_id='face-input',label='输入',columns=2,type="pil")
+                            components["face_input"] = gr.Image(elem_id='face-input',label='输入',type="pil",width=width,height=height)
+                            components["face_input2"] = gr.Image(elem_id='face_input2',label='输入-比对',type="pil",width=width,height=height)
                             components["face_examples"] = gr.Examples(
                                 examples=[
-                                    [[("face1",os.path.join(current_directory,"examples/face1.jpeg"))]],
-                                    [[(os.path.join(current_directory,"examples/face2.jpeg"),"face2")]],
+                                    [os.path.join(current_directory,"examples/face1.jpeg")],
+                                    [os.path.join(current_directory,"examples/face2.jpeg")],
                                 ],
                                 inputs=[components["face_input"]],
                                 examples_per_page=6,
@@ -152,7 +155,7 @@ def create_ui():
                 with gr.Column(scale=2):
                     with gr.Row(elem_id=''):
                         with gr.Group():
-                            components["ocr_input"] = gr.Image(elem_id='ocr-input',label='输入',type="pil")
+                            components["ocr_input"] = gr.Image(elem_id='ocr-input',label='输入',type="pil",width=width,height=height)
                             components["ocr_examples"] = gr.Examples(
                                 examples=[
                                     [os.path.join(current_directory,"examples/json.png")],
@@ -165,7 +168,7 @@ def create_ui():
                 with gr.Column(scale=2):
                     with gr.Row():
                         with gr.Group():
-                            components["ocr_output"] = gr.Image(elem_id='ocr_output',label='输出',interactive=False,type="pil")
+                            components["ocr_output"] = gr.Image(elem_id='ocr_output',label='输出',interactive=False,type="pil",width=width,height=height)
             with gr.Row():
                 with gr.Group():
                     components["ocr_json_output"] = gr.JSON(label="推理结果")
@@ -181,8 +184,8 @@ def create_ui():
             with gr.Row():
                 with gr.Column(scale=2):
                     with gr.Group():
-                        components["sam_input"] = ImagePrompter(elem_id='sam-input',label='输入',type="pil")
-                        components["sam_video_input"] = gr.Video(label='视频输入',visible=False,interactive=True)
+                        components["sam_input"] = ImagePrompter(elem_id='sam-input',label='输入',type="pil",width=width,height=height)
+                        components["sam_video_input"] = gr.Video(label='视频输入',visible=False,interactive=True,width=width,height=height)
                         components["sam_image_examples"] = gr.Examples(
                             examples=[
                                 [{'image': os.path.join(current_directory,"examples/horse.png"), 'points': []}],
@@ -206,7 +209,7 @@ def create_ui():
                 with gr.Column(scale=2):
                     with gr.Group():
                         components["sam_output"] = gr.Gallery(elem_id='sam_output',label='输出',columns=1,interactive=False)
-                        components["sam_video_output"] = gr.PlayableVideo(label='输出',visible=False)
+                        components["sam_video_output"] = gr.PlayableVideo(label='输出',visible=False,width=width,height=height)
 
         with gr.Tab("知识库"):
             with gr.Row():

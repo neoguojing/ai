@@ -265,8 +265,10 @@ class SamAnything2:
         
         if video_dir is not None:
             video_dir,frame_names,fps,frame_size = self.extract_frames(video_dir)
+            print(video_dir,frame_names[0],fps,frame_size)
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 使用 'mp4v' 编码器
-            out_video_dir = os.path.join(video_dir,"after_inference.mp4")
+            out_video_dir = os.path.join("./output","after_inference.mp4")
+            print("out_video_dir:",out_video_dir)
             video_writer = cv2.VideoWriter(out_video_dir, fourcc, fps, frame_size)
             with torch.inference_mode(), torch.autocast(self.device, dtype=torch.bfloat16):
                 state = self.video_predictor.init_state(video_path=video_dir)
@@ -274,6 +276,11 @@ class SamAnything2:
                 ann_frame_idx = 0  # the frame index we interact with
                 ann_obj_id = 1  # give a unique id to each object we interact with (it can be any integers)
 
+                if point_coords is None and box is None:
+                    point_coords = np.array([[frame_size[0]/2, frame_size[1]/2]], dtype=np.float32)
+                    # for labels, `1` means positive click and `0` means negative click
+                    point_labels = np.array([1], np.int32)
+                
                 # add new prompts and instantly get the output on the same frame
                 frame_idx, object_ids, masks = self.video_predictor.add_new_points_or_box(
                     inference_state=state,
@@ -290,17 +297,16 @@ class SamAnything2:
                         out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
                         for i, out_obj_id in enumerate(out_obj_ids)
                     }
-                    mask = (out_mask_logits > 0.0).cpu().numpy()
+                    mask = (out_mask_logits[0] > 0.0).cpu().numpy()
                     frame = cv2.imread(os.path.join(video_dir, frame_names[out_frame_idx]))
-                    print(out_frame_idx,out_obj_ids,out_mask_logits.shape,frame.shape)
+                    print(out_frame_idx,out_obj_ids,mask.shape,frame.shape)
                     np_image = self.draw_bitmask(frame, mask,pil_image=False)
                     video_writer.write(np_image)
-                    if out_frame_idx % 30 == 0:
+                    if out_frame_idx % fps == 0:
                         pil_image = Image.fromarray(np_image)
                         yield [pil_image],None
                 yield None,out_video_dir
             video_writer.release()
-        print("seg_with_promp:", masks.shape)
         
 
     def seg_all(self, input_image):
@@ -333,7 +339,8 @@ class SamAnything2:
                 break
             
             # 构建保存帧的文件名
-            filename = f"{output_dir}/{count:05d}.jpg"
+            filename = os.path.join(output_dir,f"{count:05d}.jpg")
+            print(filename)
             # 保存帧为图片
             cv2.imwrite(filename, frame)
             count += 1
@@ -341,7 +348,7 @@ class SamAnything2:
         
         # 释放视频对象
         cap.release()
-        return output_dir,filename,fps,frame_size
+        return output_dir,frame_names,fps,frame_size
 
     @staticmethod
     def draw_bitmask_split(np_image, masks):

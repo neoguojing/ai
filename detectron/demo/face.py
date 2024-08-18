@@ -118,15 +118,18 @@ class FaceAlgo:
         #face recognition
         dfs = DeepFace.find(
             img_path = a, 
-            db_path = "./test/", 
+            db_path = "./examples/", 
             detector_backend = self.backends[1],
             distance_metric = self.distance_metric[0],
         )
-
+        print(dfs)
         json_list = [df.to_json(orient='records') for df in dfs]
-        top1_path = dfs[0].at[0, 'identity']
-        top1_pil = Image.open(top1_path)
-        return json_list,[top1_pil]
+        # top1_path = dfs[0].at[0, 'identity']
+        # top1_pil = Image.open(top1_path)
+
+        identities = [identity for df in dfs for identity in df['identity'].tolist()]
+        print(identities)
+        return json_list,identities
 
     def embeddings(self,a):
         #embeddings

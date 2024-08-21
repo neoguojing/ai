@@ -9,7 +9,9 @@ services:
       - /data/.cache:/root/.cache
       - /data/.deepface:/root/.deepface
       - /data/.torch:/root/.torch
-      - /data/..EasyOCR:/root/.EasyOCR
+      - /data/.EasyOCR:/root/.EasyOCR
+      - /data/.keras:/root/.keras
+      - /data/.paddleocr:/root/.paddleocr
       - /data/gradio:/tmp/gradio
       - /data/gradio/examples:/workspace/detectron/demo/examples
       - /data/gradio/output:/workspace/detectron/demo/output

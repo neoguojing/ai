@@ -20,6 +20,6 @@ langchain==0.2.12
 langchain_community==0.2.11
 transformers==4.44.0
 lapx>=0.5.2
-paddlepaddle-gpu
+paddlepaddle
 paddleocr
 easyocr

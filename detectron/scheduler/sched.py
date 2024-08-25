@@ -1,6 +1,13 @@
 import collections
 import weakref
 import threading
+from abc import ABC, abstractmethod
+
+class ModelWrapper(ABC):
+    
+    @abstractmethod
+    def release(self):
+        pass
 
 class LRUModelScheduler:
     _instance = None
@@ -25,7 +32,7 @@ class LRUModelScheduler:
         self.cache.move_to_end(key)
         return self.cache[key]
     
-    def put_model(self, key, model):
+    def put_model(self, key, model:ModelWrapper):
         """添加/更新模型到调度器"""
         if key in self.cache:
             # 如果模型已存在，则更新
@@ -38,12 +45,10 @@ class LRUModelScheduler:
         # 添加新模型
         self.cache[key] = weakref.ref(model, self._model_finalizer)
     
-    def _destroy_model(self, model):
+    def _destroy_model(self, model:ModelWrapper):
         """销毁模型（释放资源）"""
         if model is not None:
-            # 执行模型资源释放的逻辑
-            del model  # 实际销毁模型的代码可能因模型类型不同而有所不同
-            print(f"Model {model} destroyed")
+            model.release()
     
     def _model_finalizer(self, weak_ref):
         """模型被销毁时的回调"""

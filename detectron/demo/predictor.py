@@ -36,7 +36,7 @@ class InferenceBase:
         self.cpu_device = torch.device("cpu")
         self.instance_mode = instance_mode
         self.cfg = cfg
-        self.cfg.MODEL.DEVICE = device
+        self.cfg.MODEL.DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         self.parallel = parallel
 

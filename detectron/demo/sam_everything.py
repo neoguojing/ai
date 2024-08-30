@@ -217,7 +217,8 @@ class SamAnything2:
         if isinstance(input_image, Image.Image):
             input_image = pil_image_to_numpy(input_image)
 
-        masks = self.mask_generator.generate(input_image)
+        print(input_image.shape)
+        masks = self.mask_generator.generate(input_image.copy())
         pil_images = self.draw_bitmask(input_image, masks)
         yield pil_images,None
     

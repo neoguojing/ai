@@ -246,7 +246,7 @@ def create_ui():
                     with gr.Group():
                         components["ak"] = gr.Textbox(label="appid")
                         components["sk"] = gr.Textbox(label="secret")
-                        components["llm_client"] =gr.Radio(["Wenxin", "Tongyi","Huggingface"],value="Wenxin", label="llm")
+                        components["llm_client"] =gr.Radio(["llama3.1", "Wenxin", "Tongyi","Huggingface"],value="Wenxin", label="llm")
                         components["llm_setting_btn"] =  gr.Button(value="设置")
                 with gr.Column(scale=2):
                     with gr.Group():

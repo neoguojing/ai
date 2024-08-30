@@ -1,7 +1,7 @@
 
 from detectron2.data.detection_utils import read_image,pil_image_to_numpy
 from detectron2.utils.visualizer import Visualizer
-from sam_everything import visimage_to_pil
+from sam_everything import SamAnything
 import numpy as np
 def do_ocr(ocr_type,input):
     print(ocr_type)
@@ -27,7 +27,7 @@ def do_ocr(ocr_type,input):
         view.draw_polygon(polygon, "k")
 
     vis_image = view.get_output()
-    pil_images = visimage_to_pil([vis_image])
+    pil_images = SamAnything.visimage_to_pil([vis_image])
     return pil_images[0],result
 
 def parse_esay_result(data):

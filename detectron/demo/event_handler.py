@@ -347,13 +347,12 @@ def do_llm_response(history,selected_dbs):
     else:
         print("do_llm_response prompt:",prompt)
         response = llm_client(prompt)
-        response = response.removeprefix(prompt)
-        response += quote
 
-    for character in response:
-        history[-1][1] += character
-        time.sleep(0.01)
+    for chunk in response:
+        history[-1][1] += chunk
         yield history
+
+    history[-1][1] += quote
 
 llm_client = None
 def llm(ak,sk,client):
@@ -366,7 +365,10 @@ def llm(ak,sk,client):
         llm_client = llm.qwen_agent_app
     elif client == "Huggingface":
         llm_client = llm.hg_client
-    
+    elif client == "llama3.1":
+        llm_client = llm.openai_client
+        
+    print("------------",llm_client)
     if ak == "" and sk == "":
         gr.Info("重置成功")
     else:

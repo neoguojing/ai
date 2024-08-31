@@ -22,6 +22,54 @@ height = int(width / 1.618)
 
 def create_ui():
     with gr.Blocks() as demo:
+        with gr.Tab("问答"):
+            with gr.Row():
+                with gr.Column(scale=1):
+                    with gr.Group():
+                        components["llm_client"] =gr.Dropdown(["llama3.1", "Wenxin", "Tongyi","Huggingface"],value="llama3.1", label="请选择大语言模型")
+                        components["ak"] = gr.Textbox(label="appid",visible=False)
+                        components["sk"] = gr.Textbox(label="secret",visible=False)
+                        components["llm_setting_btn"] =  gr.Button(value="设置",visible=False)
+                        components["db_select"] = gr.CheckboxGroup(knowledgeBase.get_bases(),label="知识库", info="可选择1个或多个知识库")
+                with gr.Column(scale=3):
+                    with gr.Group():
+                        components["chatbot"] = gr.Chatbot(
+                                            [(None,"你好，有什么需要帮助的？")],
+                                            elem_id="chatbot",
+                                            bubble_full_width=False,
+                                            height=600
+                            )
+                        components["chat_input"] = gr.MultimodalTextbox(interactive=True, file_types=["image"], placeholder="Enter message or upload file...", show_label=False)
+
+        with gr.Tab("知识库"):
+            with gr.Row():
+                with gr.Column(scale=1):
+                    with gr.Group():
+                        components["db_view"] = gr.Dataframe(
+                                                    headers=["列表"],
+                                                    datatype=["str"],
+                                                    row_count=2,
+                                                    col_count=(1, "fixed"),
+                                                    interactive=False
+                        )
+                with gr.Column(scale=2):
+                        with gr.Row():
+                            with gr.Column(scale=2):
+                                components["db_name"] = gr.Textbox(label="名称", info="请输入库名称", lines=1, value="")
+                            with gr.Column(scale=2):
+                                components["db_submit_btn"] = gr.Button(value="提交")
+                        components["file_upload"] = gr.File(elem_id='file_upload',file_count='multiple',label='文档上传', file_types=[".pdf", ".doc", '.docx', '.json', '.csv'])
+            with gr.Row():
+                with gr.Column(scale=2):
+                    components["db_input"] = gr.Textbox(label="关键词", lines=1, value="")
+                with gr.Column(scale=1):
+                    components["db_test_select"] = gr.Dropdown(knowledgeBase.get_bases(),multiselect=True, label="知识库选择")
+                with gr.Column(scale=1):
+                    components["dbtest_submit_btn"] = gr.Button(value="检索")
+            with gr.Row():
+                with gr.Group():
+                    components["db_search_result"] = gr.JSON(label="检索结果")
+
         with gr.Tab("基础算法"):
             with gr.Row():
                 with gr.Column(scale=2):
@@ -211,53 +259,6 @@ def create_ui():
                         components["sam_output"] = gr.Gallery(elem_id='sam_output',label='输出',columns=1,interactive=False)
                         components["sam_video_output"] = gr.PlayableVideo(label='输出',visible=False,width=width,height=height)
 
-        with gr.Tab("知识库"):
-            with gr.Row():
-                with gr.Column(scale=1):
-                    with gr.Group():
-                        components["db_view"] = gr.Dataframe(
-                                                    headers=["列表"],
-                                                    datatype=["str"],
-                                                    row_count=2,
-                                                    col_count=(1, "fixed"),
-                                                    interactive=False
-                        )
-                with gr.Column(scale=2):
-                        with gr.Row():
-                            with gr.Column(scale=2):
-                                components["db_name"] = gr.Textbox(label="名称", info="请输入库名称", lines=1, value="")
-                            with gr.Column(scale=2):
-                                components["db_submit_btn"] = gr.Button(value="提交")
-                        components["file_upload"] = gr.File(elem_id='file_upload',file_count='multiple',label='文档上传', file_types=[".pdf", ".doc", '.docx', '.json', '.csv'])
-            with gr.Row():
-                with gr.Column(scale=2):
-                    components["db_input"] = gr.Textbox(label="关键词", lines=1, value="")
-                with gr.Column(scale=1):
-                    components["db_test_select"] = gr.Dropdown(knowledgeBase.get_bases(),multiselect=True, label="知识库选择")
-                with gr.Column(scale=1):
-                    components["dbtest_submit_btn"] = gr.Button(value="检索")
-            with gr.Row():
-                with gr.Group():
-                    components["db_search_result"] = gr.JSON(label="检索结果")
-
-        with gr.Tab("问答"):
-            with gr.Row():
-                with gr.Column(scale=1):
-                    with gr.Group():
-                        components["ak"] = gr.Textbox(label="appid")
-                        components["sk"] = gr.Textbox(label="secret")
-                        components["llm_client"] =gr.Radio(["llama3.1", "Wenxin", "Tongyi","Huggingface"],value="Wenxin", label="llm")
-                        components["llm_setting_btn"] =  gr.Button(value="设置")
-                with gr.Column(scale=2):
-                    with gr.Group():
-                        components["chatbot"] = gr.Chatbot(
-                                            [(None,"你好，有什么需要帮助的？")],
-                                            elem_id="chatbot",
-                                            bubble_full_width=False,
-                                            height=600
-                            )
-                        components["chat_input"] = gr.MultimodalTextbox(interactive=True, file_types=["image"], placeholder="Enter message or upload file...", show_label=False)
-                        components["db_select"] = gr.CheckboxGroup(knowledgeBase.get_bases(),label="知识库", info="可选择1个或多个知识库")
 
         create_event_handlers()
         demo.load(init,None,gradio("db_view","db_select","db_test_select"))

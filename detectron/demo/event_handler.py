@@ -12,6 +12,7 @@ from sam_everything import SamAnything,SamAnything2
 from retriever import knowledgeBase
 from yolo_predictor import YOLOPredictor
 from ocr import do_ocr
+import llm
 params = {
     "algo_type": None,
     "input_image":None
@@ -137,8 +138,12 @@ def create_event_handlers():
     #     db_select_handler, gradio('db_select'), None, show_progress=False
     # )
 
+    components['llm_client'].change(
+        do_llm_change, gradio('llm_client'), gradio('ak','sk','llm_setting_btn')
+    )
+
     components['llm_setting_btn'].click(
-        llm, gradio('ak','sk','llm_client'), None
+        llm_setup, gradio('ak','sk','llm_client'), gradio('ak','sk','llm_setting_btn')
     )
 
 def do_refernce(algo_type,input_image):
@@ -354,11 +359,23 @@ def do_llm_response(history,selected_dbs):
 
     history[-1][1] += quote
 
-llm_client = None
-def llm(ak,sk,client):
-    global llm_client
+llm_client = llm.openai_client
+def llm_setup(ak,sk,client):
     import llm
     llm.init_param(ak,sk)
+    if ak == "" and sk == "":
+        gr.Info("重置成功")
+    else:
+        gr.Info("设置成功")
+
+    components["ak"] = gr.Textbox(label="appid",visible=False)
+    components["sk"] = gr.Textbox(label="secret",visible=False)
+    components["llm_setting_btn"] =  gr.Button(value="设置",visible=False)
+    return components["ak"],components["sk"],components["llm_setting_btn"]
+
+def do_llm_change(client):
+    global llm_client
+    
     if client == "Wenxin":
         llm_client = llm.baidu_client
     elif client == "Tongyi":
@@ -367,14 +384,18 @@ def llm(ak,sk,client):
         llm_client = llm.hg_client
     elif client == "llama3.1":
         llm_client = llm.openai_client
-        
     print("------------",llm_client)
-    if ak == "" and sk == "":
-        gr.Info("重置成功")
-    else:
-        gr.Info("设置成功")
 
-    return llm_client
+    if client != "llama3.1":
+        components["ak"] = gr.Textbox(label="appid",visible=True)
+        components["sk"] = gr.Textbox(label="secret",visible=True)
+        components["llm_setting_btn"] =  gr.Button(value="设置",visible=True)
+    else:
+        components["ak"] = gr.Textbox(label="appid",visible=False)
+        components["sk"] = gr.Textbox(label="secret",visible=False)
+        components["llm_setting_btn"] =  gr.Button(value="设置",visible=False)
+    
+    return components["ak"],components["sk"],components["llm_setting_btn"]
 
 def file_handler(file_objs,name):
     import shutil

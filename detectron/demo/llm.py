@@ -101,7 +101,10 @@ def hg_client(input):
 
 
 chat =ChatOpenAI(
-    model="llama3.1",
+    # model="llama3.1",
+    model="qwen2",
+    # model="phi3.5:3.8b-mini-instruct-fp16",
+    # model="llama3.1-local",
     openai_api_key="121212",
     base_url="http://192.168.1.7:11434/v1/",
 )
@@ -110,7 +113,7 @@ prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are a helpful assistant. Answer all questions to the best of your ability.",
+            "You are a helpful assistant. Answer all questions to the best of your ability.Please use simple chinese as default language.",
         ),
         MessagesPlaceholder(variable_name="chat_history"),
         ("human", "{input}"),

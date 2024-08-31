@@ -1,0 +1,6 @@
+detectron/demo/examples/*
+knowledge_bases/*
+tests/*
+old/*
+neo_albert_model92.5/*
+.ipynb_checkpoints/*

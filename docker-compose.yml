@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  ai-world:
+    image: 192.168.1.7:5000/ai-world:detection2-a7a0bc3
+    ports:
+      - "7860:7860"
+    volumes:
+      - /data/.cache:/root/.cache
+      - /data/.deepface:/root/.deepface
+      - /data/.torch:/root/.torch
+      - /data/.EasyOCR:/root/.EasyOCR
+      - /data/.keras:/root/.keras
+      - /data/.paddleocr:/root/.paddleocr
+      - /data/gradio:/tmp/gradio
+      - /data/gradio/examples:/workspace/detectron/demo/examples
+      - /data/gradio/output:/workspace/detectron/demo/output
+      - /data/gradio/knowledge_bases:/workspace/detectron/demo/knowledge_bases
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    restart: always

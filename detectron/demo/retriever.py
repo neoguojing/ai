@@ -2,6 +2,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import TextLoader, JSONLoader, PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.docstore.in_memory import InMemoryDocstore
+from langchain.retrievers import EnsembleRetriever
 import faiss
 import os
 import glob
@@ -137,6 +138,26 @@ class KnowledgeBaseManager:
             
         
         return results
+    
+    def get_retriever(self,names: List[str]):
+        retrievers = []
+        weights = []
+        for name in names:
+            if name not in self.knowledge_bases:
+                print(f"Knowledge base '{name}' does not exist.")
+                continue
+
+            weights.append(0.5)
+            retrievers.append(self.knowledge_bases[name].as_retriever(
+                    search_type="mmr",
+                    search_kwargs={"score_threshold": 0.5, "k": 3}
+                )
+            )
+        
+        ensemble_retriever = EnsembleRetriever(
+            retrievers=retrievers, weights=weights
+        )
+        return ensemble_retriever
     
     def get_bases(self):
         data = self.knowledge_bases.keys()

@@ -2,10 +2,6 @@ import requests
 import json
 from http import HTTPStatus
 from dashscope import Application
-from langchain_openai import ChatOpenAI
-from langchain.memory import ChatMessageHistory
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables.history import RunnableWithMessageHistory
 
 ak = ""
 sk = ""
@@ -16,7 +12,7 @@ def init_param(access_key,secret_key):
     sk = secret_key
 
 
-def baidu_client(input):
+def baidu_client(input,conversation_id=""):
     global ak, sk   
     if ak == "" or sk == "":
         return ""
@@ -57,7 +53,7 @@ def get_access_token():
     return str(requests.post(url, params=params).json().get("access_token"))
 
 
-def qwen_agent_app(input):
+def qwen_agent_app(input,conversation_id=""):
     global ak, sk   
     if ak == "" or sk == "":
         return ""
@@ -76,7 +72,7 @@ def qwen_agent_app(input):
             yield item
     
 
-def hg_client(input):
+def hg_client(input,conversation_id=""):
     global ak, sk   
     if sk == "":
         return ""
@@ -98,52 +94,6 @@ def hg_client(input):
             yield item
     
     return ""
-
-
-chat =ChatOpenAI(
-    # model="llama3.1",
-    model="qwen2",
-    # model="phi3.5:3.8b-mini-instruct-fp16",
-    # model="llama3.1-local",
-    openai_api_key="121212",
-    base_url="http://192.168.1.7:11434/v1/",
-)
-
-prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "You are a helpful assistant. Answer all questions to the best of your ability.Please use simple chinese as default language.",
-        ),
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("human", "{input}"),
-    ]
-)
-
-
-
-history = ChatMessageHistory()
-chain = prompt | chat
-llama_client = RunnableWithMessageHistory(
-    chain,
-    lambda session_id: history,
-    input_messages_key="input",
-    history_messages_key="chat_history",
-)
-
-
-def openai_client(input):
-    response = llama_client.stream(
-        {"input": input},
-        {"configurable": {"session_id": "unused"}},
-    )
-    
-    # 遍历 response 的内容（假设 response 是一个可迭代的对象）
-    for item in response:
-        # 从每个 item 中提取 'content'
-        content = item.content
-        # 使用 yield 生成提取的 content
-        yield content
 
 # if __name__ == "__main__":
 #     stream_generator = openai_client("介绍下上海")

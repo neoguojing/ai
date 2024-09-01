@@ -26,7 +26,7 @@ def create_ui():
             with gr.Row():
                 with gr.Column(scale=1):
                     with gr.Group():
-                        components["llm_client"] =gr.Dropdown(["llama3.1", "Wenxin", "Tongyi","Huggingface"],value="llama3.1", label="请选择大语言模型")
+                        components["llm_client"] =gr.Dropdown(["llama3.1","agent", "Wenxin", "Tongyi","Huggingface"],value="llama3.1", label="请选择大语言模型")
                         components["ak"] = gr.Textbox(label="appid",visible=False)
                         components["sk"] = gr.Textbox(label="secret",visible=False)
                         components["llm_setting_btn"] =  gr.Button(value="设置",visible=False)

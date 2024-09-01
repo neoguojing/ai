@@ -9,6 +9,7 @@ from langchain.retrievers import EnsembleRetriever
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 
+
 class LangchainApp:
     system_prompt = (
         "You are a helpful assistant. Answer all questions to the best of your ability."
@@ -114,19 +115,33 @@ class LangchainApp:
         return SQLChatMessageHistory(f"{user_id}--{conversation_id}", self.db_path)
     
     def chat(self,input: str,language="chinese",user_id="",conversation_id="",stream=True):
-        input_template = {"language": language, "input": input},
+        if conversation_id == "":
+            import uuid
+            conversation_id = str(uuid.uuid4())
+
+        input_template = {"language": language, "input": input}
         config = {"configurable": {"user_id": user_id, "conversation_id": conversation_id}}
 
         response = None
         if stream:
             response = self.with_message_history.stream(input_template,config)
+            for item in response:
+                yield item
         else:
             response = self.with_message_history.invoke(input_template,config)
-        
-
+            yield response
+    
+    def __call__(self,input: str,user_id="",conversation_id=""):
+        response = self.chat(input=input,user_id=user_id,conversation_id=conversation_id)
         for item in response:
             # 从每个 item 中提取 'content'
-            if not isinstance(item,str):
-                item = item.content
+            content = item.content
             # 使用 yield 生成提取的 content
-            yield item
+            yield content
+
+# if __name__ == "__main__":
+#     app = LangchainApp()
+#     stream_generator = app.chat("介绍下南宋",stream=True)
+#     # 遍历生成器
+#     for response in stream_generator:
+#         print(response.content)

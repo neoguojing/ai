@@ -21,3 +21,4 @@ detectron/demo/yolov8n-cls.pt
 detectron/demo/yolov8n-pose.pt
 detectron/demo/yolov8n-seg.pt
 detectron/demo/0_0.jpg
+memory.db

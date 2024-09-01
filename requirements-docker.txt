@@ -25,3 +25,4 @@ lapx>=0.5.2
 paddlepaddle
 paddleocr
 easyocr
+duckduckgo-search

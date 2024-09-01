@@ -11,9 +11,10 @@ from langgraph.graph import StateGraph, START
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain.tools.retriever import create_retriever_tool
-from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
+from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit,SQLDatabase
 from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage
+from langchain_community.tools import DuckDuckGoSearchResults
 
 
 class LangChainAgent:
@@ -33,7 +34,8 @@ class LangChainAgent:
         )
 
         if db_path is not None:
-            toolkit = SQLDatabaseToolkit(db=db_path, llm=self.llm)
+            db = SQLDatabase.from_uri(db_path)
+            toolkit = SQLDatabaseToolkit(db=db, llm=self.llm)
             self.tools.extend(toolkit.get_tools())
 
         if retrievers is not None:
@@ -44,22 +46,42 @@ class LangChainAgent:
             )
             self.tools.append(retriever_tool)
 
+
+        search = DuckDuckGoSearchResults()
+        self.tools.append(search)
+
         self.agent_executor = create_react_agent(
             self.llm, self.tools,checkpointer=self.memory,debug=True
         )
 
-    def chat(self,input: str,language="chinese",user_id="",conversation_id="",stream=True):
+    def chat(self,input: str,language="chinese",user_id="",conversation_id="",stream=False):
+        config = {"configurable": {"thread_id": "abc123"}}
         if stream:
             events = self.agent_executor.stream(
-                {"messages": [HumanMessage(content=input)]},
+                {"messages": [HumanMessage(content=input)]},config,
                 stream_mode="values",
             )
+            for event in events:
+                yield event["messages"][-1]
         else:
             events = self.agent_executor.invoke(
-                {"messages": [("user", input)]},
+                {"messages": [HumanMessage(content=input)]},config
             )
 
-        for event in events:
-            print(event)
-            event["messages"][-1].pretty_print()
-                
+            yield events["messages"][-1]
+            # event["messages"][-1].pretty_print()
+    
+    def __call__(self,input: str,user_id="",conversation_id=""):
+        response = self.chat(input=input,user_id=user_id,conversation_id=conversation_id)
+        for item in response:
+            # 从每个 item 中提取 'content'
+            content = item.content
+            # 使用 yield 生成提取的 content
+            yield content
+
+# if __name__ == "__main__":
+#     app = LangChainAgent()
+#     stream_generator = app.chat("俄乌战争进展",stream=False)
+#     # 遍历生成器
+#     for response in stream_generator:
+#         print("---",response.content)  # 或者进行其他操作，如解析、保存等

@@ -27,3 +27,4 @@ lapx>=0.5.2
 paddlepaddle-gpu
 paddleocr
 easyocr
+duckduckgo-search

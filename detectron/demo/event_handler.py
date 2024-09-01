@@ -13,6 +13,8 @@ from retriever import knowledgeBase
 from yolo_predictor import YOLOPredictor
 from ocr import do_ocr
 import llm
+from langchainapp import LangchainApp
+from agent import LangChainAgent
 params = {
     "algo_type": None,
     "input_image":None
@@ -322,7 +324,7 @@ def do_llm_request(history, message):
     print("do_llm_request:",history,message)
     return history, gr.MultimodalTextbox(value=None, interactive=False)
 
-def do_llm_response(history,selected_dbs):
+def do_llm_response(history,selected_dbs,request: gr.Request):
     print("do_llm_response:",history,selected_dbs)
     user_input = history[-1][0]
     prompt = ""
@@ -344,14 +346,14 @@ def do_llm_response(history,selected_dbs):
 '''
     else:
         prompt = user_input
-    
+
     history[-1][1] = ""
     if llm_client is None:
         gr.Warning("请先设置大模型")
         response = "模型参数未设置"
     else:
         print("do_llm_response prompt:",prompt)
-        response = llm_client(prompt)
+        response = llm_client(prompt,conversation_id=request.session_hash)
 
     for chunk in response:
         history[-1][1] += chunk
@@ -359,7 +361,7 @@ def do_llm_response(history,selected_dbs):
 
     history[-1][1] += quote
 
-llm_client = llm.openai_client
+llm_client = LangchainApp()
 def llm_setup(ak,sk,client):
     import llm
     llm.init_param(ak,sk)
@@ -383,10 +385,12 @@ def do_llm_change(client):
     elif client == "Huggingface":
         llm_client = llm.hg_client
     elif client == "llama3.1":
-        llm_client = llm.openai_client
+        llm_client = LangchainApp()
+    elif client == "agent":
+        llm_client = LangChainAgent()
     print("------------",llm_client)
 
-    if client != "llama3.1":
+    if client != "llama3.1" and client != "agent":
         components["ak"] = gr.Textbox(label="appid",visible=True)
         components["sk"] = gr.Textbox(label="secret",visible=True)
         components["llm_setting_btn"] =  gr.Button(value="设置",visible=True)

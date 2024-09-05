@@ -28,3 +28,4 @@ paddlepaddle-gpu
 paddleocr
 easyocr
 duckduckgo-search
+graphrag

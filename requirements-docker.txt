@@ -26,3 +26,4 @@ paddlepaddle
 paddleocr
 easyocr
 duckduckgo-search
+graphrag

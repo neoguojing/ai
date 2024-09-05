@@ -406,14 +406,15 @@ def file_handler(file_objs,name):
     import os
     
     print("file_obj:",file_objs)
-    
-    os.makedirs(os.path.dirname("./files/input/"), exist_ok=True)
+    db_path = f"./knowledge_bases/{name}"
+    input_file_path = f"{db_path}/input"
+    os.makedirs(os.path.dirname(input_file_path, exist_ok=True))
 
     for idx, file in enumerate(file_objs):
         print(file)
-        file_path = "./files/input/" +  os.path.basename(file.name)
+        file_path = f"{input_file_path}/" +  os.path.basename(file.name)
         if not os.path.exists(file_path):
-            shutil.move(file.name,"./files/input/")
+            shutil.move(file.name,input_file_path)
         
         knowledgeBase.add_documents_to_kb(name,[file_path])
 

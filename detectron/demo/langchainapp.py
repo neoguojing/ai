@@ -154,11 +154,11 @@ class LangchainApp:
         vectors =  self.embedding.embed_documents(inputs)
         return  vectors
 
-if __name__ == "__main__":
-    app = LangchainApp()
-    # stream_generator = app.chat("介绍下南宋",stream=True)
-    # # 遍历生成器
-    # for response in stream_generator:
-    #     print(response.content)
-    ret = app.embedding_one("我爱北京天安门")
-    print(ret)
+# if __name__ == "__main__":
+#     app = LangchainApp()
+#     # stream_generator = app.chat("介绍下南宋",stream=True)
+#     # # 遍历生成器
+#     # for response in stream_generator:
+#     #     print(response.content)
+#     ret = app.embedding_one("我爱北京天安门")
+#     print(ret)

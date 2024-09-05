@@ -279,9 +279,12 @@ class GraphRag:
         print(f"Copied {SETTING_DIR} to {self.BASE_DIR}")
 
     async def do_index(self):
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
         # 定义要执行的命令
         command = ['python', '-m', 'graphrag.index', '--root', self.BASE_DIR]
-        
+        print(f"Command start: {command}")
         # 使用 asyncio.create_subprocess_exec() 异步执行命令
         process = await asyncio.create_subprocess_exec(
             *command,
@@ -290,13 +293,36 @@ class GraphRag:
         )
         
         # 等待命令完成，并获取输出和错误信息
-        stdout, stderr = await process.communicate()
+        # stdout, stderr = await process.communicate()
+
+        # 定义读取流的异步函数
+        async def read_stream(stream, stream_name):
+            while True:
+                line = await stream.readline()
+                if not line:
+                    break
+                # 处理每行输出
+                decoded_line = line.decode('utf-8').rstrip()
+                logger.info(f"{stream_name}: {decoded_line}")
+
+        # 创建任务来实时读取标准输出和标准错误
+        stdout_task = asyncio.create_task(read_stream(process.stdout, "stdout"))
+        stderr_task = asyncio.create_task(read_stream(process.stderr, "stderr"))
+
+        # 等待子进程结束并确保所有输出都已处理
+        await process.wait()
+        await stdout_task
+        await stderr_task
+
         # 打印命令的输出
         if process.returncode == 0:
-            print(f"Command executed successfully: {stdout.decode()}")
+            print(f"Command executed successfully")
             self.load_graph()
         else:
-            print(f"Command failed with error: {stderr.decode()}")
+            print(f"Command failed with error: { {process.returncode}}")
 
 if __name__ == "__main__":
     rag = GraphRag("test")
+    asyncio.run(rag.do_index())
+    # ret = rag.text_embedder.embed("我爱北京天安门")
+    # print(ret)

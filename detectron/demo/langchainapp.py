@@ -8,6 +8,8 @@ from langchain_core.runnables.base import Runnable
 from langchain.retrievers import EnsembleRetriever
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_openai import OpenAIEmbeddings
+from langchain_ollama import OllamaEmbeddings
 
 
 class LangchainApp:
@@ -67,6 +69,11 @@ class LangchainApp:
 
     def __init__(self,model="qwen2",db_path="sqlite:///memory.db",
                  retrievers=None,base_url="http://192.168.1.7:11434/v1/"):
+        self.embedding =OllamaEmbeddings(
+            model="bge-m3",
+            base_url="http://192.168.1.7:11434",
+        )
+
         self.db_path = db_path
         self.llm =ChatOpenAI(
             # model="llama3.1",
@@ -139,9 +146,19 @@ class LangchainApp:
             # 使用 yield 生成提取的 content
             yield content
 
-# if __name__ == "__main__":
-#     app = LangchainApp()
-#     stream_generator = app.chat("介绍下南宋",stream=True)
-#     # 遍历生成器
-#     for response in stream_generator:
-#         print(response.content)
+    def embedding_one(self,input: str):
+        single_vector =  self.embedding.embed_query(input)
+        return  single_vector
+
+    def embedding_docs(self,inputs):
+        vectors =  self.embedding.embed_documents(inputs)
+        return  vectors
+
+if __name__ == "__main__":
+    app = LangchainApp()
+    # stream_generator = app.chat("介绍下南宋",stream=True)
+    # # 遍历生成器
+    # for response in stream_generator:
+    #     print(response.content)
+    ret = app.embedding_one("我爱北京天安门")
+    print(ret)

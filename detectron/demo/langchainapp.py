@@ -146,11 +146,11 @@ class LangchainApp:
             # 使用 yield 生成提取的 content
             yield content
 
-    def embedding_one(self,input: str):
+    def embed_query(self,input: str):
         single_vector =  self.embedding.embed_query(input)
         return  single_vector
 
-    def embedding_docs(self,inputs):
+    def embed_documents(self,inputs):
         vectors =  self.embedding.embed_documents(inputs)
         return  vectors
 
@@ -160,5 +160,5 @@ class LangchainApp:
 #     # # 遍历生成器
 #     # for response in stream_generator:
 #     #     print(response.content)
-#     ret = app.embedding_one("我爱北京天安门")
+#     ret = app.embed_query("我爱北京天安门")
 #     print(ret)

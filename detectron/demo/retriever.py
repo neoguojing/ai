@@ -8,6 +8,7 @@ import os
 import glob
 from typing import Any,List,Dict
 from embedding import Embedding
+import shutil
 
 
 class KnowledgeBaseManager:
@@ -19,43 +20,49 @@ class KnowledgeBaseManager:
         self.knowledge_bases: Dict[str, FAISS] = {}
         os.makedirs(self.base_path, exist_ok=True)
 
-        faiss_files = glob.glob(os.path.join(base_path, '*.faiss'))
+        faiss_files = glob.glob(os.path.join(base_path, '*.faiss'),recursive=True)
         # 获取不带后缀的名称
-        file_names_without_extension = [os.path.splitext(os.path.basename(file))[0] for file in faiss_files]
-        for name in file_names_without_extension:
+        # file_names_without_extension = [os.path.splitext(os.path.basename(file))[0] for file in faiss_files]
+        # 获取 .faiss 文件的上级目录的名称
+        db_names = [os.path.basename(os.path.dirname(file)) for file in faiss_files]
+
+        for name in db_names:
             self.load_knowledge_base(name)
 
 
     def create_knowledge_base(self, name: str):
         index = faiss.IndexFlatL2(self.embedding_dim)
-        kb = FAISS(self.embeddings, index, InMemoryDocstore(), {})
+        index = FAISS(self.embeddings, index, InMemoryDocstore(), {})
         if name in self.knowledge_bases:
             print(f"Knowledge base '{name}' already exists.")
             return
         
-        self.knowledge_bases[name] = kb
+        self.knowledge_bases[name] = index
         self.save_knowledge_base(name)
         print(f"Knowledge base '{name}' created.")
 
     def delete_knowledge_base(self, name: str):
-        if name in self.knowledge_bases:
+        if name in self.knowledge_bases and name != "":
             del self.knowledge_bases[name]
-            os.remove(os.path.join(self.base_path, f"{name}.faiss"))
+            index_path = os.path.join(self.base_path, name)
+            shutil.rmtree(index_path)
             print(f"Knowledge base '{name}' deleted.")
         else:
             print(f"Knowledge base '{name}' does not exist.")
 
     def load_knowledge_base(self, name: str):
-        kb_path = os.path.join(self.base_path, f"{name}.faiss")
-        if os.path.exists(kb_path):
-            self.knowledge_bases[name] = FAISS.load_local(self.base_path, self.embeddings, name, allow_dangerous_deserialization=True)
+        index_path = os.path.join(self.base_path, name)
+        if os.path.exists(index_path):
+            self.knowledge_bases[name] = FAISS.load_local(index_path, self.embeddings, allow_dangerous_deserialization=True)
             print(f"Knowledge base '{name}' loaded.")
         else:
             print(f"Knowledge base '{name}' does not exist.")
 
     def save_knowledge_base(self, name: str):
         if name in self.knowledge_bases:
-            self.knowledge_bases[name].save_local(self.base_path, name)
+            index_path = os.path.join(self.base_path, name)
+            os.makedirs(index_path, exist_ok=True)
+            self.knowledge_bases[name].save_local(index_path)
             print(f"Knowledge base '{name}' saved.")
         else:
             print(f"Knowledge base '{name}' does not exist.")
@@ -67,12 +74,12 @@ class KnowledgeBaseManager:
     #     'source': './files/input/PS004.pdf',
     #     'page': 1
     # })
-    def add_documents_to_kb(self, name: str, file_paths: List[str]):
+    def add_documents_to_knowledge_base(self, name: str, file_paths: List[str]):
         if name not in self.knowledge_bases:
             print(f"Knowledge base '{name}' does not exist.")
             self.create_knowledge_base(name)
         
-        kb = self.knowledge_bases[name]
+        index = self.knowledge_bases[name]
         documents = self.load_documents(file_paths)
         print(f"Loaded {len(documents)} documents.")
         print(documents)
@@ -83,7 +90,7 @@ class KnowledgeBaseManager:
         doc_ids = []
         for i in range(0, len(pages), self.batch_size):
             batch = pages[i:i+self.batch_size]
-            doc_ids.extend(kb.add_documents(batch))
+            doc_ids.extend(index.add_documents(batch))
         
         self.save_knowledge_base(name)
         return doc_ids

@@ -401,22 +401,22 @@ def do_llm_change(client):
     
     return components["ak"],components["sk"],components["llm_setting_btn"]
 
-def file_handler(file_objs,name):
+def file_handler(input_file_objs,name):
     import shutil
     import os
     
-    print("file_obj:",file_objs)
+    print("file_obj:",input_file_objs)
     db_path = f"./knowledge_bases/{name}"
-    input_file_path = f"{db_path}/input"
-    os.makedirs(os.path.dirname(input_file_path, exist_ok=True))
+    db_input_dir_path = f"{db_path}/input"
+    os.makedirs(os.path.dirname(db_input_dir_path, exist_ok=True))
 
-    for idx, file in enumerate(file_objs):
-        print(file)
-        file_path = f"{input_file_path}/" +  os.path.basename(file.name)
-        if not os.path.exists(file_path):
-            shutil.move(file.name,input_file_path)
+    for idx, input_file_obj in enumerate(input_file_objs):
+        print(input_file_obj)
+        db_input_file_path = f"{db_input_dir_path}/" +  os.path.basename(input_file_obj.name)
+        if not os.path.exists(db_input_file_path):
+            shutil.move(input_file_obj.name,db_input_dir_path)
         
-        knowledgeBase.add_documents_to_kb(name,[file_path])
+        knowledgeBase.add_documents_to_knowledge_base(name,[db_input_file_path])
 
     dbs = knowledgeBase.get_bases()
     dfs = knowledgeBase.get_df_bases()
